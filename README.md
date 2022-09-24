@@ -35,3 +35,7 @@ nc 127.0.0.1 8080
 ### Variorum
 
 For slightly more accurate information you can use the [variorum](https://github.com/patricoferris/ocaml-variorum) backend. You must [setup certain things that are hardware specific](https://variorum.readthedocs.io/en/latest/HWArchitectures.html).
+
+```sh
+clarke monitor --meter=variorum
+```
