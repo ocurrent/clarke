@@ -1,0 +1,3 @@
+[submodule "ocaml-variorum"]
+	path = ocaml-variorum
+	url = https://github.com/patricoferris/ocaml-variorum

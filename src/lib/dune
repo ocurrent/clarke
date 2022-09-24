@@ -1,0 +1,3 @@
+(library
+ (name clarke)
+ (libraries eio ptime variorum))
