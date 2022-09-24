@@ -1,3 +1,4 @@
 (library
  (name clarke)
+ (public_name clarke)
  (libraries eio ptime variorum ezjsonm))
