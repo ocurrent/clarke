@@ -7,8 +7,6 @@ open Eio
     free to build your own more elaborate versions.
 *)
 
-module Info : S.Info
-
 val const : clock:Time.clock -> float -> S.measurer
 (** [const ~clock f] is the model which will always report the same energy
     usage. *)

@@ -1,1 +1,0 @@
-let make ~clock:_ () = ()
