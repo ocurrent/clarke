@@ -3,7 +3,7 @@ open Eio
 
 type t = { clock : Time.clock }
 
-let supported = true (* TODO: Dummy implementations for macOS etc. *)
+let supported = Variorum.supported
 
 let collect t =
   match Node_power.get () with

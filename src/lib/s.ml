@@ -1,4 +1,4 @@
-module type Measurer = sig
+module type Meter = sig
   type t
 
   val supported : bool
@@ -8,7 +8,7 @@ module type Measurer = sig
   val collect : t -> Info.t
 end
 
-type measurer = Measurer : (module Measurer with type t = 'a) * 'a -> measurer
+type meter = Meter : (module Meter with type t = 'a) * 'a -> meter
 
 module type Output = sig
   type t
@@ -17,6 +17,6 @@ module type Output = sig
 end
 
 module type S = sig
-  module Measure : Measurer
+  module Meter : Meter
   module Output : Output
 end

@@ -1,0 +1,18 @@
+opam-version: "2.0"
+version: "0.1.0"
+synopsis: "A power monitoring tool"
+maintainer: "Patrick Ferris <patrick@sirreg.org>"
+authors: "Patrick Ferris <patrick@sirreg.org>"
+license: "MIT"
+homepage: "https://github.com/patricoferris/clarke"
+bug-reports: "https://github.com/patricoferris/clarke/issues"
+dev-repo: "git+https://github.com/patricoferris/clarke.git"
+doc: "https://patricoferris.github.io/clarke/"
+build: ["dune" "build" "-p" name "-j" jobs]
+depends: [
+  "dune" {>= "2.0"}
+  "eio_main" {>= "0.5"}
+  "variorum"
+  "ptime"
+  "cmdliner"
+]
