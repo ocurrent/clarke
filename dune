@@ -1,1 +1,1 @@
-(vendored_dirs ocaml-variorum ocaml-ipmi)
+(vendored_dirs ocaml-variorum eio)

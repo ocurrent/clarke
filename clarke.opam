@@ -11,8 +11,15 @@ doc: "https://patricoferris.github.io/clarke/"
 build: ["dune" "build" "-p" name "-j" jobs]
 depends: [
   "dune" {>= "2.0"}
-  "eio_main" {>= "0.5"}
+  "eio_luv"
   "variorum"
   "ptime"
   "cmdliner"
+]
+pin-depends: [
+  [ "hwloc.dev" "git+https://github.com/patricoferris/ocaml-hwloc#3447dc5c40f0d868529aafcc84b5d2d971062b30" ]
+  [ "jansson.dev" "git+https://github.com/patricoferris/ocaml-jansson#42cb429e722ec64807d75ae401758eb666c9d189" ]
+  [ "eio.dev" "git+https://github.com/patricoferris/eio#e22946a7e8de7094f15753cc9084beb1c06dd43b" ]
+  [ "eio_luv.dev" "git+https://github.com/patricoferris/eio#e22946a7e8de7094f15753cc9084beb1c06dd43b" ]
+  [ "variorum.dev" "git+https://github.com/patricoferris/ocaml-variorum#9128770e9df08ca7a90f317acc08b9cd49da6766" ]
 ]

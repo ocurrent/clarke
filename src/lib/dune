@@ -1,4 +1,4 @@
 (library
  (name clarke)
  (public_name clarke)
- (libraries eio ptime variorum ezjsonm))
+ (libraries eio_luv eio.unix ptime variorum ezjsonm))
