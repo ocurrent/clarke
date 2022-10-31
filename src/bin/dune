@@ -1,4 +1,4 @@
 (executable
  (name main)
  (public_name clarke)
- (libraries eio_main eio.unix clarke cmdliner))
+ (libraries eio_luv eio.unix clarke cmdliner))

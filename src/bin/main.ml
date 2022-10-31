@@ -43,11 +43,13 @@ module Specs = struct
 
   let meter_of_meter_spec ~clock = function
     | `Const f -> Models.const ~clock f
+    | `Ipmi -> S.Meter ((module Clarke.Ipmi), { clock })
     | `Variorum -> S.Meter ((module Clarke.Variorum), { clock })
 
   let meter_spec_of_string s =
     match String.lowercase_ascii s with
     | "variorum" -> Ok `Variorum
+    | "ipmi" -> Ok `Ipmi
     | v -> (
         match String.split_on_char ':' v with
         | [ "const"; f ] -> (
@@ -103,4 +105,4 @@ let main_cmd env =
   let default = Term.(ret @@ const (`Help (`Pager, None))) in
   Cmd.group info ~default (cmds env)
 
-let () = Eio_main.run @@ fun env -> exit (Cmd.eval_result (main_cmd env))
+let () = Eio_luv.run @@ fun env -> exit (Cmd.eval_result (main_cmd env))
