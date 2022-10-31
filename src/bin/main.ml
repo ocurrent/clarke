@@ -105,4 +105,4 @@ let main_cmd env =
   let default = Term.(ret @@ const (`Help (`Pager, None))) in
   Cmd.group info ~default (cmds env)
 
-let () = Eio_main.run @@ fun env -> exit (Cmd.eval_result (main_cmd env))
+let () = Eio_luv.run @@ fun env -> exit (Cmd.eval_result (main_cmd env))
