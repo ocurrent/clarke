@@ -1,11 +1,24 @@
-type t = { watts : float; timestamp : Ptime.t }
+type t = { watts : float; timestamp : Ptime.t; intensity : float option }
 
-let v timestamp watts = { timestamp; watts }
+let v ?intensity timestamp watts = { timestamp; watts; intensity }
 let timestamp t = t.timestamp
 let watts t = t.watts
-let pp ppf t = Format.fprintf ppf "%a: %f" Ptime.pp t.timestamp t.watts
+let intensity t = t.intensity
+
+let pp_intensity ppf = function
+  | None -> ()
+  | Some f -> Fmt.pf ppf "%f gCO2/kWh" f
+
+let pp ppf t =
+  Format.fprintf ppf "%a: %f %a" Ptime.pp t.timestamp t.watts pp_intensity
+    t.intensity
 
 let to_json t =
-  Format.fprintf Format.str_formatter {|{"watts": %f, "timestamp": "%a"}|}
-    t.watts (Ptime.pp_rfc3339 ()) t.timestamp;
-  Format.flush_str_formatter ()
+  let intensity = match t.intensity with None -> `Null | Some f -> `Float f in
+  `O
+    [
+      ("watts", `Float t.watts);
+      ("timestamp", `String (Ptime.to_rfc3339 t.timestamp));
+      ("intensity", intensity);
+    ]
+  |> Ezjsonm.to_string

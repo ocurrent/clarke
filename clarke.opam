@@ -20,6 +20,7 @@ depends: [
   "lwt_eio"
   "prometheus"
   "prometheus-app"
+  "carbon"
 ]
 pin-depends: [
   [ "hwloc.dev" "git+https://github.com/patricoferris/ocaml-hwloc#3447dc5c40f0d868529aafcc84b5d2d971062b30" ]
@@ -27,4 +28,6 @@ pin-depends: [
   [ "eio.dev" "git+https://github.com/patricoferris/eio#6e681fec1f5894c29c28a042ab107675dd0fd518" ]
   [ "eio_luv.dev" "git+https://github.com/patricoferris/eio#6e681fec1f5894c29c28a042ab107675dd0fd518" ]
   [ "variorum.dev" "git+https://github.com/patricoferris/ocaml-variorum#9128770e9df08ca7a90f317acc08b9cd49da6766" ]
+  [ "ISO3166.dev" "git+https://github.com/geocaml/ISO3166#425ce3790f8e0a94ad31dd3ff6033463d645b3db" ]
+  [ "carbon.dev" "git+https://github.com/geocaml/carbon-intensity#2d9e7b0376584fcf931f7847d32acfcde8a0b83c" ]
 ]

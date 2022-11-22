@@ -135,7 +135,7 @@ module Logging = struct
 end
 
 (* Largely based on the other implementations of Prometheus servers:
-   
+
 
                                  Apache License
                            Version 2.0, January 2004
