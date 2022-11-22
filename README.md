@@ -19,7 +19,7 @@ Calculating energy information for an arbitrary machine is challenging. Clarke c
 
 None are perfect and more than likely they are all going to under-approximate the amount of energy used.
 
-The tool is also primarily focused on calculating emissions. It integrates the [carbon-intensity](https://github.com/geocaml/carbon-intensity) tool to also monitor the carbon intensity of the energy in the country where the computer is located. You can provide two arguments to control this. `--country` takes an ISO3061 alpha-2 code for the country and `--api` is the path to a file containing the [co2-signal](https://www.co2signal.com) API key. Note if you use `GB` as your code, you won't need to provide an API key.
+The tool is also primarily focused on calculating emissions. It integrates the [carbon-intensity](https://github.com/geocaml/carbon-intensity) tool to also monitor the carbon intensity of the energy in the country where the computer is located. You can provide two arguments to control this. `--country` takes an ISO3166 alpha-2 code for the country and `--api` is the path to a file containing the [co2-signal](https://www.co2signal.com) API key. Note if you use `GB` as your code, you won't need to provide an API key.
 
 ## Typical Usage
 
