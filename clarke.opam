@@ -15,6 +15,7 @@ depends: [
   "variorum"
   "ptime"
   "cmdliner"
+  "lwt_eio"
   "prometheus"
   "prometheus-app"
 ]
