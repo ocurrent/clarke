@@ -1,4 +1,11 @@
 (executable
  (name main)
  (public_name clarke)
- (libraries eio_luv eio.unix clarke cmdliner clarke.prometheus-eio))
+ (libraries
+  eio_luv
+  eio.unix
+  clarke
+  cmdliner
+  clarke.prometheus-eio
+  logs.cli
+  fmt.cli))
