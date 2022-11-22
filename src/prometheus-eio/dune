@@ -1,0 +1,13 @@
+(library
+ (name prometheus_app_eio)
+ (public_name clarke.prometheus-eio)
+ (libraries
+  prometheus
+  prometheus-app
+  cmdliner
+  cohttp-eio
+  lwt_eio
+  logs.fmt
+  fmt.tty)
+ (modules Prometheus_eio)
+ (wrapped false))

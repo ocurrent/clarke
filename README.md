@@ -10,7 +10,7 @@ Clarke tries to work out how much energy your machine is using, perhaps also how
 Calculating energy information for an arbitrary machine is challenging. Clarke currently offers three approximations:
 
  - Based on information collected from the CPU
- - Based on information collected using IPMI (for bare-metals servers) *coming soon...*
+ - Based on information collected using IPMI (for bare-metals servers)
  - Based on some user-specified function over time
 
 None are perfect and more than likely they are all going to under-approximate the amount of energy used.
@@ -39,3 +39,7 @@ For slightly more accurate information you can use the [variorum](https://github
 ```sh
 clarke monitor --meter=variorum
 ```
+
+### Prometheus Support
+
+Clarke also integrates with Prometheus. Passing `--listen-prometheus=<port>` will start a prometheus server on port `<port>`.
