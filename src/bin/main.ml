@@ -43,8 +43,8 @@ module Specs = struct
 
   let meter_of_meter_spec ~clock = function
     | `Const f -> Models.const ~clock f
-    | `Ipmi -> S.Meter ((module Clarke.Ipmi), { clock })
-    | `Variorum -> S.Meter ((module Clarke.Variorum), { clock })
+    | `Ipmi -> S.Meter ((module Clarke.Models.Ipmi), { clock })
+    | `Variorum -> S.Meter ((module Clarke.Models.Variorum), { clock })
 
   let meter_spec_of_string s =
     match String.lowercase_ascii s with
@@ -78,26 +78,32 @@ let output_spec_term =
 
 let period_term = Arg.value @@ Arg.opt Arg.int 5 @@ Arg.info [ "p"; "period" ]
 
-let monitor ~stdout ~net ~clock =
-  let run output meter period =
+let monitor ~env ~stdout ~net ~clock =
+  let run output meter period prom =
     Switch.run @@ fun sw ->
     let (S.Meter ((module M), t) : S.meter) =
       Specs.meter_of_meter_spec ~clock meter
     in
     if not M.supported then Error "Unsupported meter choice, consult the manual"
     else (
-      Specs.with_sink ~sw ~stdout ~net output (fun sink ->
-          while true do
-            M.collect t |> Outputs.Flow.send sink;
-            Eio.Flow.copy_string "\n" sink;
-            Eio_unix.sleep (float_of_int period)
-          done);
+      Fiber.both (Prometheus_eio.serve env prom) (fun () ->
+          Specs.with_sink ~sw ~stdout ~net output (fun sink ->
+              while true do
+                let info = M.collect t in
+                Outputs.Flow.send sink info;
+                Prometheus.Gauge.set Clarke.Metrics.watts (Info.watts info);
+                Eio.Flow.copy_string "\n" sink;
+                Eio_unix.sleep (float_of_int period)
+              done));
       Ok ())
   in
   let info = Cmd.info "monitor" in
-  Cmd.v info Term.(const run $ output_spec_term $ meter_spec_term $ period_term)
+  Cmd.v info
+    Term.(
+      const run $ output_spec_term $ meter_spec_term $ period_term
+      $ Prometheus_eio.opts)
 
-let cmds env = [ monitor ~stdout:env#stdout ~net:env#net ~clock:env#clock ]
+let cmds env = [ monitor ~env ~stdout:env#stdout ~net:env#net ~clock:env#clock ]
 
 let main_cmd env =
   let doc = "a power monitoring process" in
@@ -105,4 +111,6 @@ let main_cmd env =
   let default = Term.(ret @@ const (`Help (`Pager, None))) in
   Cmd.group info ~default (cmds env)
 
-let () = Eio_luv.run @@ fun env -> exit (Cmd.eval_result (main_cmd env))
+let () =
+  Eio_luv.run @@ fun env ->
+  exit (Cmd.eval_result (main_cmd (env :> Eio.Stdenv.t)))

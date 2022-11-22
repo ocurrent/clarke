@@ -1,5 +1,5 @@
 module S = S
-module Variorum = Model_variorum
-module Ipmi = Ipmi
+module Info = Info
 module Models = Models
 module Outputs = Outputs
+module Metrics = Metrics

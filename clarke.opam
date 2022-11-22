@@ -15,11 +15,16 @@ depends: [
   "variorum"
   "ptime"
   "cmdliner"
+  "http"
+  "cohttp-eio"
+  "lwt_eio"
+  "prometheus"
+  "prometheus-app"
 ]
 pin-depends: [
   [ "hwloc.dev" "git+https://github.com/patricoferris/ocaml-hwloc#3447dc5c40f0d868529aafcc84b5d2d971062b30" ]
   [ "jansson.dev" "git+https://github.com/patricoferris/ocaml-jansson#42cb429e722ec64807d75ae401758eb666c9d189" ]
-  [ "eio.dev" "git+https://github.com/patricoferris/eio#e22946a7e8de7094f15753cc9084beb1c06dd43b" ]
-  [ "eio_luv.dev" "git+https://github.com/patricoferris/eio#e22946a7e8de7094f15753cc9084beb1c06dd43b" ]
+  [ "eio.dev" "git+https://github.com/patricoferris/eio#6e681fec1f5894c29c28a042ab107675dd0fd518" ]
+  [ "eio_luv.dev" "git+https://github.com/patricoferris/eio#6e681fec1f5894c29c28a042ab107675dd0fd518" ]
   [ "variorum.dev" "git+https://github.com/patricoferris/ocaml-variorum#9128770e9df08ca7a90f317acc08b9cd49da6766" ]
 ]

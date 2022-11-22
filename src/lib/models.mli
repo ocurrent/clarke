@@ -14,3 +14,17 @@ val const : clock:Time.clock -> float -> S.meter
 val time : clock:Time.clock -> (Ptime.t -> float) -> S.meter
 (** [time ~clock fn] is a model that uses [fn] to model the energy usage. 
     [fn] is a function from the current time to the energy usage. *)
+
+(** Variorum-based metric collecting *)
+module Variorum : sig
+  type t = { clock : Time.clock }
+
+  include S.Meter with type t := t
+end
+
+(** IPMI-based metric collecting *)
+module Ipmi : sig
+  type t = { clock : Time.clock }
+
+  include S.Meter with type t := t
+end
