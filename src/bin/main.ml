@@ -197,7 +197,11 @@ let monitor ~env ~stdout ~net ~clock =
       const run $ setup_log $ output_spec_term $ meter_spec_term $ period_term
       $ Prometheus_eio.opts $ country_code_term $ api_term)
 
-let cmds env = [ monitor ~env ~stdout:env#stdout ~net:env#net ~clock:env#clock ]
+let cmds env =
+  [
+    monitor ~env ~stdout:env#stdout ~net:env#net ~clock:env#clock;
+    Calc.cmd setup_log env#fs;
+  ]
 
 let main_cmd env =
   let doc = "a power monitoring process" in

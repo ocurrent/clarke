@@ -22,3 +22,10 @@ let to_json t =
       ("intensity", intensity);
     ]
   |> Ezjsonm.to_string
+
+let to_csv t =
+  Fmt.str "%s,%s,%a"
+    (Ptime.to_rfc3339 t.timestamp)
+    (string_of_float t.watts)
+    Fmt.(option string)
+    (Option.map string_of_float t.intensity)
