@@ -36,6 +36,15 @@ clarke monitor --meter=const:100 --output=tcp:loopback:8080 &
 nc 127.0.0.1 8080
 ```
 
+If you redirect the output to a file called `data.json` you can then use the `calc` command to work out statistics amount energy and emission usage.
+
+```
+clarke calc --data=./data.json
+Total time: 4h32mins                
+Total energy: 0.725867kJ
+Emissions: 118.000427gCO2
+```
+
 ### Variorum
 
 For slightly more accurate information you can use the [variorum](https://github.com/patricoferris/ocaml-variorum) backend. You must [setup certain things that are hardware specific](https://variorum.readthedocs.io/en/latest/HWArchitectures.html).
