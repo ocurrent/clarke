@@ -20,11 +20,15 @@ let with_socket ~sw net v fn =
   done
 
 module Specs = struct
-  type output_spec = [ `Stdout | Net.Sockaddr.stream ]
+  type output_spec = [ `Stdout | Net.Sockaddr.stream | `File of string ]
 
-  let with_sink ~sw ~stdout ~net spec fn =
+  let with_sink ~sw ~fs ~stdout ~net spec fn =
     match spec with
     | `Stdout -> fn (stdout :> Flow.sink)
+    | `File f ->
+        Path.with_open_out ~append:true ~create:(`If_missing 0o644)
+          Path.(fs / f)
+        @@ fun flow -> fn (flow :> Flow.sink)
     | #Net.Sockaddr.stream as v -> with_socket ~sw net v fn
 
   let output_spec_of_string s =
@@ -32,6 +36,7 @@ module Specs = struct
     | "stdout" -> Ok `Stdout
     | v -> (
         match String.split_on_char ':' v with
+        | [ "file"; path ] -> Ok (`File path)
         | [ "tcp"; addr; port ] -> (
             try
               let addr =
@@ -44,6 +49,7 @@ module Specs = struct
         | _ -> Error (`Msg ("Unknown " ^ v)))
 
   let pp_output_spec ppf = function
+    | `File f -> Fmt.pf ppf "file:%s" f
     | `Stdout -> Format.pp_print_string ppf "stdout"
     | #Net.Sockaddr.stream as v -> Net.Sockaddr.pp ppf v
 
@@ -68,7 +74,7 @@ module Specs = struct
         | _ -> Error (`Msg ("Unknown " ^ v)))
 
   let pp_meter_spec ppf = function
-    | `Const f -> Format.fprintf ppf "const:%f" f
+    | `Const f -> Format.fprintf ppf "const:%.2fW" f
     | `Variorum -> Format.pp_print_string ppf "variorum"
     | `Ipmi -> Format.pp_print_string ppf "ipmi"
 
@@ -79,8 +85,8 @@ end
 open Cmdliner
 
 let meter_spec_term =
-  Arg.required
-  @@ Arg.opt Arg.(some Specs.meter_spec) None
+  Arg.value
+  @@ Arg.opt Specs.meter_spec (`Const 250.)
   @@ Arg.info [ "m"; "meter" ]
 
 let output_spec_term =
@@ -112,6 +118,32 @@ let api_term =
   Arg.value
   @@ Arg.opt Arg.(some string) None
   @@ Arg.info ~doc:"A file containing the CO2-Signal API code" [ "co2-signal" ]
+
+let machine_term =
+  Arg.required
+  @@ Arg.opt Arg.(some string) None
+  @@ Arg.info ~doc:"The machine name" [ "machine" ]
+
+let reporter_term =
+  let open Summary in
+  let spec =
+    Arg.conv ((fun s -> Ok (Reporter.spec_of_string s)), Reporter.pp_spec)
+  in
+  Arg.value
+  @@ Arg.opt Arg.(some spec) None
+  @@ Arg.info
+       ~doc:
+         "An optional reporter to use: stdout, file:<path>, \
+          slack:<endpoint-in-file>. Note that when a reporter is enabled it \
+          will only work with a file output for the data as it must persist. \
+          The reporter will then delete the data file after"
+       [ "reporter" ]
+
+let report_period_term =
+  Arg.value
+  @@ Arg.opt Arg.float (24. *. 60. *. 60.)
+  @@ Arg.info ~doc:"How often to summarise a report in seconds"
+       [ "report-period" ]
 
 let update_info_with_intensity intensity info =
   let watts = Info.watts info in
@@ -152,11 +184,31 @@ let setup_log =
   Term.(
     const setup_log $ Fmt_cli.style_renderer ~docs () $ Logs_cli.level ~docs ())
 
+let log_err = function
+  | Ok () -> ()
+  | Error (`Msg s) -> Logs.err (fun f -> f "%s" s)
+
+let report ~env ~machine spec file =
+  let open Summary in
+  match spec with
+  | None -> ()
+  | Some spec ->
+      let (Reporter ((module T), conf)) = Reporter.of_spec env spec in
+      let s =
+        Path.(with_open_in (env#fs / file)) @@ fun flow ->
+        let reader = Buf_read.of_flow ~max_size:max_int flow in
+        Clarke.Summary.summary reader |> Result.get_ok
+      in
+      Path.(unlink (env#fs / file));
+      T.report ~machine conf s |> log_err
+
 let monitor ~env ~stdout ~net ~clock =
-  let run () output meter period prom country api_code =
+  let run () machine output meter period prom country api_code reporter_spec
+      reporter_period =
     let api_code =
       Option.map (fun f -> Path.(load (env#fs / f) |> String.trim)) api_code
     in
+    let fs = Eio.Stdenv.fs env in
     let get_intensity () =
       let i = get_intensity ?country ?api_code net in
       Option.iter (Prometheus.Gauge.set Metrics.carbon_intensity) i;
@@ -179,23 +231,36 @@ let monitor ~env ~stdout ~net ~clock =
               intensity := get_intensity ()
             done);
           (fun () ->
-            Specs.with_sink ~sw ~stdout ~net output (fun sink ->
+            match output with
+            | `File file ->
                 while true do
+                  Eio_unix.sleep reporter_period;
+                  report ~env ~machine reporter_spec file
+                done
+            | _ ->
+                Logs.warn (fun f ->
+                    f
+                      "Reporter will only work if data is being output to a \
+                       file"));
+          (fun () ->
+            while true do
+              Specs.with_sink ~sw ~fs ~stdout ~net output (fun sink ->
                   let info = M.collect t in
                   let info = update_info_with_intensity !intensity info in
                   Outputs.Flow.send sink info;
                   Prometheus.Gauge.set Clarke.Metrics.watts (Info.watts info);
                   Eio.Flow.copy_string "\n" sink;
-                  Eio_unix.sleep (float_of_int period)
-                done));
+                  Eio_unix.sleep (float_of_int period))
+            done);
         ];
       Ok ())
   in
   let info = Cmd.info "monitor" in
   Cmd.v info
     Term.(
-      const run $ setup_log $ output_spec_term $ meter_spec_term $ period_term
-      $ Prometheus_eio.opts $ country_code_term $ api_term)
+      const run $ setup_log $ machine_term $ output_spec_term $ meter_spec_term
+      $ period_term $ Prometheus_eio.opts $ country_code_term $ api_term
+      $ reporter_term $ report_period_term)
 
 let cmds env =
   [

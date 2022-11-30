@@ -69,9 +69,9 @@ let total_emissions t = t.total_emissions
 let total_energy t = t.total_energy
 
 let pp ppf t =
-  Fmt.pf ppf "Total time: %as@.Total energy: %fkJ@.Emissions: %agCO2@."
+  Fmt.pf ppf "Total time: %a@.Total energy: %fkJ@.Emissions: %agCO2@."
     Fmt.uint64_ns_span t.total_time t.total_energy
-    Fmt.(option float)
+    Fmt.(option ~none:(Fmt.const Fmt.string "N/A") float)
     t.total_emissions
 
 let summary ?(format = `Json) reader =
@@ -101,3 +101,158 @@ let summary ?(format = `Json) reader =
       total_energy;
       total_emissions;
     }
+
+module Reporter = struct
+  open Cohttp_eio
+
+  module type S = sig
+    type conf
+
+    val report :
+      machine:string -> conf -> t -> (unit, [ `Msg of string ]) result
+  end
+
+  type t = Reporter : ((module S with type conf = 'a) * 'a) -> t
+
+  module Stdout = struct
+    type conf = Eio.Flow.sink
+
+    let report ~machine flow s =
+      Ok (Flow.copy_string (Fmt.str "machine:%s\n%a\n" machine pp s) flow)
+  end
+
+  module File = struct
+    type conf = Fs.dir Path.t
+
+    let report ~machine path s =
+      Path.with_open_out ~append:true ~create:(`If_missing 0o644) path
+      @@ fun flow -> Stdout.report ~machine flow s
+  end
+
+  module Slack = struct
+    type conf = Net.t * string (* The slack endpoint *)
+
+    type status =
+      [ `Getaddr_info_empty of string | `Connection_failure | Http.Status.t ]
+
+    let pp_status ppf = function
+      | `Connection_failure -> Fmt.string ppf "Failed to connect"
+      | `Getaddr_info_empty s ->
+          Fmt.pf ppf "Getaddr info returned no IP addresses: %s" s
+      | #Http.Status.t as v -> Http.Status.pp ppf v
+
+    let null_auth ?ip:_ ~host:_ _ = Ok None
+
+    let with_tls_conn ~net hostname fn =
+      let addrs =
+        try Net.getaddrinfo_stream ~service:"https" net hostname with _ -> []
+      in
+      match addrs with
+      | [] -> `Getaddr_info_empty hostname
+      | addr :: _ -> (
+          Switch.run @@ fun sw ->
+          let authenticator = null_auth in
+          let socket =
+            try `Socket (Eio.Net.connect ~sw net addr)
+            with Net.Connection_failure exn ->
+              Logs.info (fun f ->
+                  f "Connection failure: %s" (Printexc.to_string exn));
+              `Connection_failure
+          in
+          match socket with
+          | `Connection_failure -> fn `Connection_failure
+          | `Socket socket ->
+              let conn =
+                let host =
+                  Result.to_option
+                    (Result.bind
+                       (Domain_name.of_string hostname)
+                       Domain_name.host)
+                in
+                Tls_eio.client_of_flow
+                  Tls.Config.(
+                    client ~version:(`TLS_1_1, `TLS_1_3) ~authenticator ())
+                  ?host socket
+              in
+              fn (`Ok conn))
+
+    let hostname = "hooks.slack.com"
+
+    let format machine t =
+      `O
+        [
+          ("type", `String "section");
+          ( "fields",
+            `A
+              [
+                `O
+                  [
+                    ("type", `String "mrkdwn");
+                    ("text", `String ("*Machine:*\n" ^ machine));
+                  ];
+                `O
+                  [
+                    ("type", `String "mrkdwn");
+                    ("text", `String (Fmt.str "*Info:*\n%a" pp t));
+                  ];
+              ] );
+        ]
+
+    let format_msgs machine msgs = `O [ ("blocks", `A [ format machine msgs ]) ]
+
+    let headers s =
+      Http.Header.of_list
+        [
+          ("host", hostname);
+          (* ("Content-Type", "application/json"); *)
+          ("Content-Length", string_of_int s);
+        ]
+
+    let body ~machine msgs = format_msgs machine msgs |> Ezjsonm.value_to_string
+
+    let report ~machine (net, t) s =
+      let run s =
+        with_tls_conn ~net hostname @@ function
+        | `Connection_failure -> `OK
+        | `Ok conn ->
+            let resp, _ =
+              Client.post
+                ~headers:(headers (String.length s))
+                ~body:(Body.Fixed s) ~conn (hostname, None) t
+            in
+            (Http.Response.status resp :> status)
+      in
+      let status =
+        let s = body ~machine s in
+        run s
+      in
+      match status with
+      | `OK -> Ok ()
+      | s -> Error (`Msg ("Slack post failed: " ^ Fmt.str "%a\n" pp_status s))
+  end
+
+  let make_file path = ((module File : S with type conf = File.conf), path)
+  let make_sink sink = ((module Stdout : S with type conf = Stdout.conf), sink)
+
+  let make_slack net path =
+    let endpoint = Path.load path |> String.trim in
+    ((module Slack : S with type conf = Slack.conf), (net, endpoint))
+
+  type spec = [ `File of string | `Slack of string | `Stdout ]
+
+  let of_spec env : spec -> t = function
+    | `File p -> Reporter (make_file Path.(env#fs / p))
+    | `Slack e -> Reporter (make_slack env#net Path.(env#fs / e))
+    | `Stdout -> Reporter (make_sink env#stdout)
+
+  let spec_of_string s =
+    match Astring.String.cut s ~sep:":" with
+    | Some ("file", file) -> `File file
+    | Some ("slack", e) -> `Slack e
+    | _ -> `Stdout
+
+  let pp_spec f = function
+    | `File path -> Fmt.pf f "file:%s" path
+    | `Slack path -> Fmt.pf f "slack:%s" path
+    | `Stdout -> Fmt.string f "stdout"
+end
