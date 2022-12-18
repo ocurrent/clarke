@@ -23,6 +23,8 @@ depends: [
   "prometheus-app"
   "ISO3166"
   "carbon"
+  "capnp-rpc-lwt"
+  "capnp-rpc-unix"
 ]
 pin-depends: [
   [ "hwloc.dev" "git+https://github.com/patricoferris/ocaml-hwloc#3447dc5c40f0d868529aafcc84b5d2d971062b30" ]
