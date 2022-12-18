@@ -10,8 +10,8 @@ dev-repo: "git+https://github.com/patricoferris/clarke.git"
 doc: "https://patricoferris.github.io/clarke/"
 build: ["dune" "build" "-p" name "-j" jobs]
 depends: [
-  "dune" {>= "2.0"}
-  "eio_luv"
+  "dune"     {>= "2.0"}
+  "eio_luv"  {>= "0.7"}
   "variorum"
   "ptime"
   "cmdliner"
@@ -21,14 +21,20 @@ depends: [
   "lwt_eio"
   "prometheus"
   "prometheus-app"
+  "ISO3166"
   "carbon"
+  "capnp-rpc-lwt"
+  "capnp-rpc-unix"
 ]
 pin-depends: [
   [ "hwloc.dev" "git+https://github.com/patricoferris/ocaml-hwloc#3447dc5c40f0d868529aafcc84b5d2d971062b30" ]
   [ "jansson.dev" "git+https://github.com/patricoferris/ocaml-jansson#42cb429e722ec64807d75ae401758eb666c9d189" ]
-  [ "eio.dev" "git+https://github.com/patricoferris/eio#6e681fec1f5894c29c28a042ab107675dd0fd518" ]
-  [ "eio_luv.dev" "git+https://github.com/patricoferris/eio#6e681fec1f5894c29c28a042ab107675dd0fd518" ]
   [ "variorum.dev" "git+https://github.com/patricoferris/ocaml-variorum#9128770e9df08ca7a90f317acc08b9cd49da6766" ]
-  [ "ISO3166.dev" "git+https://github.com/geocaml/ISO3166#425ce3790f8e0a94ad31dd3ff6033463d645b3db" ]
-  [ "carbon.dev" "git+https://github.com/geocaml/carbon-intensity#2d9e7b0376584fcf931f7847d32acfcde8a0b83c" ]
+  [ "carbon.dev" "git+https://github.com/geocaml/carbon-intensity#872bc97cf1e98c55a6ea6f72f485bcaa605d19b1" ]
+  [ "http.dev" "git+https://github.com/mirage/ocaml-cohttp#df6e8fc58edac41b285c9b6d2bbc0b23533fa713"]
+  [ "cohttp-eio.dev" "git+https://github.com/mirage/ocaml-cohttp#df6e8fc58edac41b285c9b6d2bbc0b23533fa713"]
+  [ "capnp-rpc.dev" "git+https://github.com/talex5/capnp-rpc#c06e767b8a4ec5a87a07e62958cdb55d0d59c59d" ]
+  [ "capnp-rpc-net.dev" "git+https://github.com/talex5/capnp-rpc#c06e767b8a4ec5a87a07e62958cdb55d0d59c59d" ]
+  [ "capnp-rpc-lwt.dev" "git+https://github.com/talex5/capnp-rpc#c06e767b8a4ec5a87a07e62958cdb55d0d59c59d" ]
+  [ "capnp-rpc-unix.dev" "git+https://github.com/talex5/capnp-rpc#c06e767b8a4ec5a87a07e62958cdb55d0d59c59d" ]
 ]

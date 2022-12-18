@@ -6,3 +6,4 @@ module Models = Models
 module Outputs = Outputs
 module Metrics = Metrics
 module Summary = Summary
+module Capnp_client = Capnp_client

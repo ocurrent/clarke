@@ -11,47 +11,74 @@ module Metrics = struct
     Prometheus.Gauge.v ~help ~namespace ~subsystem "intensity"
 end
 
+type output = O : (module S.Output with type t = 'a) * 'a -> output
+
 let with_socket ~sw net v fn =
   let listener = Net.listen ~sw ~backlog:5 net v in
   while true do
     Net.accept_fork ~sw listener ~on_error:(fun e ->
         traceln "Err: %s" (Printexc.to_string e))
-    @@ fun socket _addr -> fn (socket :> Flow.sink)
+    @@ fun socket _addr ->
+    fn
+      (O
+         ( (module Outputs.Flow : S.Output with type t = Flow.sink),
+           (socket :> Flow.sink) ))
   done
 
 module Specs = struct
-  type output_spec = [ `Stdout | Net.Sockaddr.stream | `File of string ]
+  type output_spec =
+    | Flow of [ `Stdout | Net.Sockaddr.stream | `File of string ]
+    | Capnp of string
 
-  let with_sink ~sw ~fs ~stdout ~net spec fn =
+  let with_output ~sw ~fs ~stdout ~net spec fn =
     match spec with
-    | `Stdout -> fn (stdout :> Flow.sink)
-    | `File f ->
+    | Flow `Stdout ->
+        fn
+          (O
+             ( (module Outputs.Flow : S.Output with type t = Flow.sink),
+               (stdout :> Flow.sink) ))
+    | Flow (`File f) ->
         Path.with_open_out ~append:true ~create:(`If_missing 0o644)
           Path.(fs / f)
-        @@ fun flow -> fn (flow :> Flow.sink)
-    | #Net.Sockaddr.stream as v -> with_socket ~sw net v fn
+        @@ fun flow ->
+        fn
+          (O
+             ( (module Outputs.Flow : S.Output with type t = Flow.sink),
+               (flow :> Flow.sink) ))
+    | Flow (#Net.Sockaddr.stream as v) -> with_socket ~sw net v fn
+    | Capnp f ->
+        let uri = Path.(load (fs / f)) |> String.trim |> Uri.of_string in
+        let client_vat = Capnp_rpc_unix.client_only_vat ~sw net in
+        let sr = Capnp_rpc_unix.Vat.import_exn client_vat uri in
+        Capnp_rpc_lwt.Sturdy_ref.with_cap_exn sr @@ fun client ->
+        fn
+          (O
+             ( (module Outputs.Capnp : S.Output with type t = Capnp_client.t),
+               client ))
 
   let output_spec_of_string s =
     match String.lowercase_ascii s with
-    | "stdout" -> Ok `Stdout
+    | "stdout" -> Ok (Flow `Stdout)
     | v -> (
         match String.split_on_char ':' v with
-        | [ "file"; path ] -> Ok (`File path)
+        | [ "file"; path ] -> Ok (Flow (`File path))
         | [ "tcp"; addr; port ] -> (
             try
               let addr =
                 if addr = "loopback" then Net.Ipaddr.V4.loopback
                 else Net.Ipaddr.of_raw addr
               in
-              Ok (`Tcp (addr, int_of_string port))
+              Ok (Flow (`Tcp (addr, int_of_string port)))
             with _ -> Error (`Msg "Port parsing failed"))
-        | [ "unix"; addr ] -> Ok (`Unix addr)
+        | [ "unix"; addr ] -> Ok (Flow (`Unix addr))
+        | [ "capnp"; path ] -> Ok (Capnp path)
         | _ -> Error (`Msg ("Unknown " ^ v)))
 
   let pp_output_spec ppf = function
-    | `File f -> Fmt.pf ppf "file:%s" f
-    | `Stdout -> Format.pp_print_string ppf "stdout"
-    | #Net.Sockaddr.stream as v -> Net.Sockaddr.pp ppf v
+    | Flow (`File f) -> Fmt.pf ppf "file:%s" f
+    | Flow `Stdout -> Format.pp_print_string ppf "stdout"
+    | Flow (#Net.Sockaddr.stream as v) -> Net.Sockaddr.pp ppf v
+    | Capnp file -> Fmt.pf ppf "capnp:%s" file
 
   let output_spec = Cmdliner.Arg.conv (output_spec_of_string, pp_output_spec)
 
@@ -91,8 +118,11 @@ let meter_spec_term =
 
 let output_spec_term =
   Arg.value
-  @@ Arg.opt Specs.output_spec `Stdout
-  @@ Arg.info ~doc:"The output location of the monitoring data"
+  @@ Arg.opt Specs.output_spec (Flow `Stdout)
+  @@ Arg.info
+       ~doc:
+         "The output location of the monitoring data, which can be a capnp \
+          capability written to a file"
        [ "o"; "output" ]
 
 let period_term =
@@ -156,7 +186,7 @@ let get_intensity ?country ?api_code net =
   | None, None -> None
   | Some code, None ->
       if `GB = code then
-        Carbon.Gb.get_intensity net
+        Carbon.Gb.(get_intensity (v net))
         |> Carbon.Gb.Intensity.actual |> Option.map float_of_int
       else (
         Logs.warn (fun f ->
@@ -167,8 +197,8 @@ let get_intensity ?country ?api_code net =
       Logs.info (fun f ->
           f "Calculating carbon intensity for %s"
             (ISO3166.alpha2_to_string country_code));
-      let v = Carbon.Co2_signal.v api in
-      let i = Co2_signal.get_intensity ~net v ~country_code in
+      let v = Carbon.Co2_signal.v ~api_key:api net in
+      let i = Co2_signal.get_intensity v ~country_code in
       Co2_signal.Intensity.intensity i |> float_of_int |> Option.some
   | _ -> None
 
@@ -197,14 +227,14 @@ let report ~env ~machine spec file =
       let s =
         Path.(with_open_in (env#fs / file)) @@ fun flow ->
         let reader = Buf_read.of_flow ~max_size:max_int flow in
-        Clarke.Summary.summary reader |> Result.get_ok
+        Clarke.Summary.summary ~format:`Csv reader |> Result.get_ok
       in
       Path.(unlink (env#fs / file));
       T.report ~machine conf s |> log_err
 
 let monitor ~env ~stdout ~net ~clock =
-  let run () machine output meter period prom country api_code reporter_spec
-      reporter_period =
+  let run () machine output_spec meter period prom country api_code
+      reporter_spec reporter_period =
     let api_code =
       Option.map (fun f -> Path.(load (env#fs / f) |> String.trim)) api_code
     in
@@ -215,6 +245,11 @@ let monitor ~env ~stdout ~net ~clock =
       i
     in
     Logs.info (fun f -> f "Monitoring...");
+    (* The log file is used for summaries, it should be optional
+       if the reporter is defined or not. *)
+    let log_file =
+      Filename.(temp_file ~temp_dir:(get_temp_dir_name ()) "clarke" ".log")
+    in
     Switch.run @@ fun sw ->
     let intensity = ref (get_intensity ()) in
     let (S.Meter ((module M), t) : S.meter) =
@@ -231,27 +266,29 @@ let monitor ~env ~stdout ~net ~clock =
               intensity := get_intensity ()
             done);
           (fun () ->
-            match output with
-            | `File file ->
-                while true do
-                  Eio_unix.sleep reporter_period;
-                  report ~env ~machine reporter_spec file
-                done
-            | _ ->
-                Logs.warn (fun f ->
-                    f
-                      "Reporter will only work if data is being output to a \
-                       file"));
-          (fun () ->
+            Logs.info (fun f -> f "Reporter log: %s" log_file);
             while true do
-              Specs.with_sink ~sw ~fs ~stdout ~net output (fun sink ->
+              Eio_unix.sleep reporter_period;
+              report ~env ~machine reporter_spec log_file
+            done);
+          (fun () ->
+            (* The reporter deletes the file after reporting for similicty
+               so it needs to be recreated. *)
+            Specs.with_output ~sw ~fs ~stdout ~net output_spec
+              (fun (O ((module O), o) : output) ->
+                while true do
+                  Path.(
+                    with_open_out ~append:true ~create:(`If_missing 0o644)
+                      (fs / log_file))
+                  @@ fun log ->
                   let info = M.collect t in
                   let info = update_info_with_intensity !intensity info in
-                  Outputs.Flow.send sink info;
+                  O.send ~machine o info;
+                  Flow.copy_string (Info.to_csv info) log;
+                  Flow.copy_string "\n" log;
                   Prometheus.Gauge.set Clarke.Metrics.watts (Info.watts info);
-                  Eio.Flow.copy_string "\n" sink;
-                  Eio_unix.sleep (float_of_int period))
-            done);
+                  Eio_unix.sleep (float_of_int period)
+                done));
         ];
       Ok ())
   in
@@ -265,6 +302,7 @@ let monitor ~env ~stdout ~net ~clock =
 let cmds env =
   [
     monitor ~env ~stdout:env#stdout ~net:env#net ~clock:env#clock;
+    Server.cmd setup_log ~net:env#net;
     Calc.cmd setup_log env#fs;
   ]
 

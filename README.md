@@ -57,3 +57,17 @@ clarke monitor --meter=variorum
 
 The Intelligent Platform Management Interface (IPMI) is another way we can query information about the power usage of a computer, or usually in this case a server. Using `--meter=ipmi` will try to use `ipmi-tool` to query sensors for power consumption statistics.
 
+## Collecting Information
+
+Clarke allows you to output the period power usage information to "flows" (like `stdout`, a file and a socket) and also to a capnp address. The command line tool can be used to generate an address.
+
+```
+clarke serve
++Server address: capnp://address
+```
+
+You can then point the monitor to this and it will send the information to a centralised server.
+
+```
+clarke monitor --machine=my-machine --period=60 -c gb --output=capnp:.capnp --reporter=log --report-period=10000
+```
