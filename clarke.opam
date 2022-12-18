@@ -30,7 +30,7 @@ pin-depends: [
   [ "hwloc.dev" "git+https://github.com/patricoferris/ocaml-hwloc#3447dc5c40f0d868529aafcc84b5d2d971062b30" ]
   [ "jansson.dev" "git+https://github.com/patricoferris/ocaml-jansson#42cb429e722ec64807d75ae401758eb666c9d189" ]
   [ "variorum.dev" "git+https://github.com/patricoferris/ocaml-variorum#9128770e9df08ca7a90f317acc08b9cd49da6766" ]
-  [ "carbon.dev" "git+https://github.com/geocaml/carbon-intensity#2d9e7b0376584fcf931f7847d32acfcde8a0b83c" ]
+  [ "carbon.dev" "git+https://github.com/geocaml/carbon-intensity#872bc97cf1e98c55a6ea6f72f485bcaa605d19b1" ]
   [ "http.dev" "git+https://github.com/mirage/ocaml-cohttp#df6e8fc58edac41b285c9b6d2bbc0b23533fa713"]
   [ "cohttp-eio.dev" "git+https://github.com/mirage/ocaml-cohttp#df6e8fc58edac41b285c9b6d2bbc0b23533fa713"]
   [ "capnp-rpc.dev" "git+https://github.com/talex5/capnp-rpc#c06e767b8a4ec5a87a07e62958cdb55d0d59c59d" ]
