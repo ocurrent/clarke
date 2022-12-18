@@ -103,8 +103,6 @@ let summary ?(format = `Json) reader =
     }
 
 module Reporter = struct
-  open Cohttp_eio
-
   module type S = sig
     type conf
 
@@ -130,6 +128,8 @@ module Reporter = struct
   end
 
   module Slack = struct
+    open Cohttp_eio
+
     type conf = Net.t * string (* The slack endpoint *)
 
     type status =
@@ -154,9 +154,8 @@ module Reporter = struct
           let authenticator = null_auth in
           let socket =
             try `Socket (Eio.Net.connect ~sw net addr)
-            with Net.Connection_failure exn ->
-              Logs.info (fun f ->
-                  f "Connection failure: %s" (Printexc.to_string exn));
+            with Io (Net.E (Net.Connection_failure _exn), _ctx) ->
+              Logs.info (fun f -> f "Connection failur");
               `Connection_failure
           in
           match socket with

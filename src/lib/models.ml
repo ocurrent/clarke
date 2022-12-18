@@ -65,18 +65,16 @@ module Ipmi = struct
 
   let read_all handle buf =
     let rec read acc =
-      try
-        let i = Eio_luv.Low_level.Stream.read_into handle buf in
-        read (acc + i)
-      with End_of_file -> acc
+      match Eio_luv.Low_level.Stream.read_into handle buf with
+      | i -> read (acc + i)
+      | exception End_of_file -> acc
     in
     read 0
 
   let get_power_consumption () =
     let cmd, args = Cmd.power_consumption in
-    let parent_pipe = Eio_luv.Low_level.Pipe.init () in
     Switch.run @@ fun sw ->
-    let handle = Eio_luv.Low_level.Pipe.to_handle ~sw parent_pipe in
+    let parent_pipe = Eio_luv.Low_level.Pipe.init ~sw () in
     let buf = Luv.Buffer.create 64 in
     let redirect =
       Eio_luv.Low_level.Process.
@@ -84,7 +82,7 @@ module Ipmi = struct
     in
     let t = Process.spawn ~sw ~redirect cmd args in
     let _ = Process.await_exit t in
-    let read = read_all handle buf in
+    let read = read_all parent_pipe buf in
     Luv.Buffer.to_string (Luv.Buffer.sub buf ~offset:0 ~length:read)
 
   let collect t =

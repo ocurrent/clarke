@@ -4,6 +4,7 @@
  (libraries
   eio_luv
   eio.unix
+  capnp-rpc-unix
   clarke
   cmdliner
   clarke.prometheus-eio

@@ -23,6 +23,23 @@ let to_json t =
     ]
   |> Ezjsonm.to_string
 
+let of_json v =
+  let j = Ezjsonm.value_from_string v in
+  match
+    ( Ezjsonm.find_opt j [ "watts" ],
+      Ezjsonm.find_opt j [ "timestamp" ],
+      Ezjsonm.find_opt j [ "intensity" ] )
+  with
+  | Some w, Some ts, Some i ->
+      let watts = Ezjsonm.get_float w in
+      let timestamp =
+        Ezjsonm.get_string ts |> Ptime.of_rfc3339 |> Result.get_ok
+        |> fun (v, _, _) -> v
+      in
+      let intensity = if i = `Null then None else Some (Ezjsonm.get_float i) in
+      { watts; timestamp; intensity }
+  | _ -> failwith "Malformed carbon information"
+
 let to_csv t =
   Fmt.str "%s,%s,%a"
     (Ptime.to_rfc3339 t.timestamp)
