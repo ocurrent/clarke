@@ -34,6 +34,7 @@ pin-depends: [
   [ "http.dev" "git+https://github.com/mirage/ocaml-cohttp#df6e8fc58edac41b285c9b6d2bbc0b23533fa713"]
   [ "cohttp-eio.dev" "git+https://github.com/mirage/ocaml-cohttp#df6e8fc58edac41b285c9b6d2bbc0b23533fa713"]
   [ "capnp-rpc.dev" "git+https://github.com/talex5/capnp-rpc#c06e767b8a4ec5a87a07e62958cdb55d0d59c59d" ]
+  [ "capnp-rpc-net.dev" "git+https://github.com/talex5/capnp-rpc#c06e767b8a4ec5a87a07e62958cdb55d0d59c59d" ]
   [ "capnp-rpc-lwt.dev" "git+https://github.com/talex5/capnp-rpc#c06e767b8a4ec5a87a07e62958cdb55d0d59c59d" ]
   [ "capnp-rpc-unix.dev" "git+https://github.com/talex5/capnp-rpc#c06e767b8a4ec5a87a07e62958cdb55d0d59c59d" ]
 ]
