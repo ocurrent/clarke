@@ -1,0 +1,11 @@
+diff --git a/src/bin/dune b/src/bin/dune
+index 57a9d14..b492566 100644
+--- a/src/bin/dune
++++ b/src/bin/dune
+@@ -1,5 +1,6 @@
+ (executable
+  (name main)
++ (ocamlopt_flags (:standard -ccopt -static))
+  (public_name clarke)
+  (libraries
+   eio_luv

@@ -5,6 +5,7 @@ COPY --chown=opam clarke.opam /src/
 WORKDIR /src
 RUN opam pin -yn . && opam install -y --deps-only .
 ADD --chown=opam . .
+RUN git apply static.patch
 RUN opam exec -- dune subst
 RUN opam config exec -- dune build ./_build/install/default/bin/clarke
 
