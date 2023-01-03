@@ -10,7 +10,7 @@ RUN opam exec -- dune subst
 RUN opam config exec -- dune build ./_build/install/default/bin/clarke
 
 FROM alpine:3.16
-RUN apk add --update docker.io libev4 curl gnupg2 git libsqlite3-dev ca-certificates netbase
+RUN sudo apk add --update docker.io libev4 curl gnupg2 git libsqlite3-dev ca-certificates netbase
 WORKDIR /var/lib/clarke
 ENTRYPOINT ["/usr/local/bin/clarke"]
 ENV PROGRESS_NO_TRUNC=1
