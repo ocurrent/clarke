@@ -76,19 +76,3 @@ index e9e4cc5..8ad55c2 100644
  
  (** IPMI-based metric collecting *)
  module Ipmi : sig
-diff --git a/static.patch b/static.patch
-index 3ebd450..e69de29 100644
---- a/static.patch
-+++ b/static.patch
-@@ -1,11 +0,0 @@
--diff --git a/src/bin/dune b/src/bin/dune
--index 57a9d14..b492566 100644
----- a/src/bin/dune
--+++ b/src/bin/dune
--@@ -1,5 +1,6 @@
-- (executable
--  (name main)
--+ (flags (:standard -cclib -static))
--  (public_name clarke)
--  (libraries
--   eio_luv
