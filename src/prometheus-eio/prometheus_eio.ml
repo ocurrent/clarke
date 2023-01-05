@@ -66,11 +66,36 @@ module Server = struct
           Cohttp_eio.Body.Fixed "Bad request" )
 end
 
+let run_server ~port env handler =
+  let run_domain ssock handler =
+    let on_error exn =
+      Printf.fprintf stderr "Error handling connection: %s\n%!"
+        (Printexc.to_string exn)
+    in
+    let handler = Cohttp_eio.Server.connection_handler handler in
+    Eio.Switch.run (fun sw ->
+        let rec loop () =
+          Eio.Net.accept_fork ~sw ssock ~on_error handler;
+          loop ()
+        in
+        loop ())
+  in
+  let run ~port env handler =
+    Eio.Switch.run @@ fun sw ->
+    let ssock =
+      Eio.Net.listen (Eio.Stdenv.net env) ~sw ~reuse_addr:true ~reuse_port:true
+        ~backlog:128
+        (`Tcp (Eio.Net.Ipaddr.V4.any, port))
+    in
+    run_domain ssock handler
+  in
+  run ~port env handler
+
 let serve env = function
   | None -> fun () -> ()
   | Some port ->
       let callback = Server.callback in
-      fun () -> Cohttp_eio.Server.run ~port env callback
+      fun () -> run_server ~port env callback
 
 let listen_prometheus =
   let open! Cmdliner in
