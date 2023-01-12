@@ -82,28 +82,29 @@ module Specs = struct
 
   let output_spec = Cmdliner.Arg.conv (output_spec_of_string, pp_output_spec)
 
-  type meter_spec = [ `Const of float | `Variorum ]
+  type meter_spec = [ `Const of float | `Ipmi of string | `Variorum ]
 
   let meter_of_meter_spec ~clock = function
     | `Const f -> Models.const ~clock f
-    | `Ipmi -> S.Meter ((module Clarke.Models.Ipmi), { clock })
+    | `Ipmi sensor -> S.Meter ((module Clarke.Models.Ipmi), { clock; sensor })
     | `Variorum -> S.Meter ((module Clarke.Models.Variorum), { clock })
 
   let meter_spec_of_string s =
     match String.lowercase_ascii s with
     | "variorum" -> Ok `Variorum
-    | "ipmi" -> Ok `Ipmi
+    | "ipmi" -> Ok (`Ipmi "Pwr Consumption")
     | v -> (
         match String.split_on_char ':' v with
         | [ "const"; f ] -> (
             try Ok (`Const (float_of_string f))
             with _ -> Error (`Msg "Float parsing failed"))
+        | [ "ipmi"; sensor ] -> Ok (`Ipmi sensor)
         | _ -> Error (`Msg ("Unknown " ^ v)))
 
   let pp_meter_spec ppf = function
     | `Const f -> Format.fprintf ppf "const:%.2fW" f
     | `Variorum -> Format.pp_print_string ppf "variorum"
-    | `Ipmi -> Format.pp_print_string ppf "ipmi"
+    | `Ipmi s -> Format.fprintf ppf "ipmi:%s" s
 
   let meter_spec = Cmdliner.Arg.conv (meter_spec_of_string, pp_meter_spec)
 end
@@ -114,7 +115,13 @@ open Cmdliner
 let meter_spec_term =
   Arg.value
   @@ Arg.opt Specs.meter_spec (`Const 250.)
-  @@ Arg.info [ "m"; "meter" ]
+  @@ Arg.info
+       ~doc:
+         "The meter by which to measure power consumption which could be a \
+          constant value (const:123), variorum or ipmi. Ipmi can be configured \
+          to use a different sensor with --meter=ipmi:<sensor>. By default it \
+          will use 'Pwr Consumption'"
+       [ "m"; "meter" ]
 
 let output_spec_term =
   Arg.value

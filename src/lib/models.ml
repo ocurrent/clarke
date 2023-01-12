@@ -49,17 +49,15 @@ module Ipmi = struct
 
   module Cmd = struct
     let ipmi args = ("sudo", "sudo" :: "ipmitool" :: args)
+    let power_consumption sensor = ipmi [ "sensor"; "reading"; sensor; "-c" ]
 
-    let power_consumption =
-      ipmi [ "sensor"; "reading"; "Pwr Consumption"; "-c" ]
-
-    let parse_power_consumption s =
+    let parse_power_consumption ~sensor s =
       match String.split_on_char ',' (String.trim s) with
-      | "Pwr Consumption" :: watts :: _ -> int_of_string watts
+      | v :: watts :: _ when v = sensor -> int_of_string watts
       | _ -> failwith "Couldn't parse the power consumption"
   end
 
-  type t = { clock : Eio.Time.clock }
+  type t = { clock : Eio.Time.clock; sensor : string }
 
   let supported = true
 
@@ -71,8 +69,8 @@ module Ipmi = struct
     in
     read 0
 
-  let get_power_consumption () =
-    let cmd, args = Cmd.power_consumption in
+  let get_power_consumption sensor =
+    let cmd, args = Cmd.power_consumption sensor in
     Switch.run @@ fun sw ->
     let parent_pipe = Eio_luv.Low_level.Pipe.init ~sw () in
     let buf = Luv.Buffer.create 64 in
@@ -87,7 +85,9 @@ module Ipmi = struct
 
   let collect t =
     let pc =
-      get_power_consumption () |> Cmd.parse_power_consumption |> float_of_int
+      get_power_consumption t.sensor
+      |> Cmd.parse_power_consumption ~sensor:t.sensor
+      |> float_of_int
     in
     Info.v (Option.get (Ptime.of_float_s @@ Time.now t.clock)) pc
 end
