@@ -10,19 +10,32 @@ index 57a9d14..ac665ad 100644
   (libraries
    eio_luv
 diff --git a/src/bin/main.ml b/src/bin/main.ml
-index 93a029b..aeb7f5b 100644
+index 45a7618..f8f2dc2 100644
 --- a/src/bin/main.ml
 +++ b/src/bin/main.ml
-@@ -87,7 +87,8 @@ module Specs = struct
+@@ -87,11 +87,11 @@ module Specs = struct
    let meter_of_meter_spec ~clock = function
      | `Const f -> Models.const ~clock f
-     | `Ipmi -> S.Meter ((module Clarke.Models.Ipmi), { clock })
+     | `Ipmi sensor -> S.Meter ((module Clarke.Models.Ipmi), { clock; sensor })
 -    | `Variorum -> S.Meter ((module Clarke.Models.Variorum), { clock })
-+    | `Variorum -> failwith "Temporarily disabled for static linking"
 +    (* | `Variorum -> S.Meter ((module Clarke.Models.Variorum), { clock }) *)
  
    let meter_spec_of_string s =
      match String.lowercase_ascii s with
+-    | "variorum" -> Ok `Variorum
++    (* | "variorum" -> Ok `Variorum *)
+     | "ipmi" -> Ok (`Ipmi "Pwr Consumption")
+     | v -> (
+         match String.split_on_char ':' v with
+@@ -103,7 +103,7 @@ module Specs = struct
+ 
+   let pp_meter_spec ppf = function
+     | `Const f -> Format.fprintf ppf "const:%.2fW" f
+-    | `Variorum -> Format.pp_print_string ppf "variorum"
++    (* | `Variorum -> Format.pp_print_string ppf "variorum" *)
+     | `Ipmi s -> Format.fprintf ppf "ipmi:%s" s
+ 
+   let meter_spec = Cmdliner.Arg.conv (meter_spec_of_string, pp_meter_spec)
 diff --git a/src/lib/dune b/src/lib/dune
 index 183050b..36e65ba 100644
 --- a/src/lib/dune
@@ -37,7 +50,7 @@ index 183050b..36e65ba 100644
    prometheus
    carbon
 diff --git a/src/lib/models.ml b/src/lib/models.ml
-index 67e9cba..9de4bfb 100644
+index 31d094a..f4bca64 100644
 --- a/src/lib/models.ml
 +++ b/src/lib/models.ml
 @@ -27,7 +27,7 @@ let time ~clock f =
@@ -59,7 +72,7 @@ index 67e9cba..9de4bfb 100644
  module Ipmi = struct
    open Eio_luv.Low_level
 diff --git a/src/lib/models.mli b/src/lib/models.mli
-index e9e4cc5..8ad55c2 100644
+index 7044503..11fe9fd 100644
 --- a/src/lib/models.mli
 +++ b/src/lib/models.mli
 @@ -16,11 +16,11 @@ val time : clock:Time.clock -> (Ptime.t -> float) -> S.meter
@@ -76,3 +89,86 @@ index e9e4cc5..8ad55c2 100644
  
  (** IPMI-based metric collecting *)
  module Ipmi : sig
+diff --git a/static.patch b/static.patch
+index c66f4e7..e69de29 100644
+--- a/static.patch
++++ b/static.patch
+@@ -1,78 +0,0 @@
+-diff --git a/src/bin/dune b/src/bin/dune
+-index 57a9d14..ac665ad 100644
+---- a/src/bin/dune
+-+++ b/src/bin/dune
+-@@ -1,5 +1,6 @@
+- (executable
+-  (name main)
+-+ (flags (:standard -cclib -static))
+-  (public_name clarke)
+-  (libraries
+-   eio_luv
+-diff --git a/src/bin/main.ml b/src/bin/main.ml
+-index 93a029b..aeb7f5b 100644
+---- a/src/bin/main.ml
+-+++ b/src/bin/main.ml
+-@@ -87,7 +87,8 @@ module Specs = struct
+-   let meter_of_meter_spec ~clock = function
+-     | `Const f -> Models.const ~clock f
+-     | `Ipmi -> S.Meter ((module Clarke.Models.Ipmi), { clock })
+--    | `Variorum -> S.Meter ((module Clarke.Models.Variorum), { clock })
+-+    | `Variorum -> failwith "Temporarily disabled for static linking"
+-+    (* | `Variorum -> S.Meter ((module Clarke.Models.Variorum), { clock }) *)
+- 
+-   let meter_spec_of_string s =
+-     match String.lowercase_ascii s with
+-diff --git a/src/lib/dune b/src/lib/dune
+-index 183050b..36e65ba 100644
+---- a/src/lib/dune
+-+++ b/src/lib/dune
+-@@ -13,7 +13,7 @@
+-   eio_luv
+-   eio.unix
+-   ptime
+--  variorum
+-+  ; variorum
+-   ezjsonm
+-   prometheus
+-   carbon
+-diff --git a/src/lib/models.ml b/src/lib/models.ml
+-index 67e9cba..9de4bfb 100644
+---- a/src/lib/models.ml
+-+++ b/src/lib/models.ml
+-@@ -27,7 +27,7 @@ let time ~clock f =
+-   end in
+-   S.Meter ((module M : S.Meter with type t = M.t), M.{ clock })
+- 
+--module Variorum = struct
+-+(* module Variorum = struct
+-   open Variorum
+-   open Eio
+- 
+-@@ -42,7 +42,7 @@ module Variorum = struct
+-         Info.v
+-           (Option.get (Ptime.of_float_s @@ Time.now t.clock))
+-           (Node_power.power_node s)
+--end
+-+end *)
+- 
+- module Ipmi = struct
+-   open Eio_luv.Low_level
+-diff --git a/src/lib/models.mli b/src/lib/models.mli
+-index e9e4cc5..8ad55c2 100644
+---- a/src/lib/models.mli
+-+++ b/src/lib/models.mli
+-@@ -16,11 +16,11 @@ val time : clock:Time.clock -> (Ptime.t -> float) -> S.meter
+-     [fn] is a function from the current time to the energy usage. *)
+- 
+- (** Variorum-based metric collecting *)
+--module Variorum : sig
+-+(* module Variorum : sig
+-   type t = { clock : Time.clock }
+- 
+-   include S.Meter with type t := t
+--end
+-+end *)
+- 
+- (** IPMI-based metric collecting *)
+- module Ipmi : sig
