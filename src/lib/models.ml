@@ -54,7 +54,7 @@ module Ipmi = struct
     let parse_power_consumption ~sensor s =
       match String.split_on_char ',' (String.trim s) with
       | v :: watts :: _ when v = sensor -> int_of_string watts
-      | _ -> failwith "Couldn't parse the power consumption"
+      | _ -> failwith ("Couldn't parse the power consumption: " ^ s)
   end
 
   type t = { clock : Eio.Time.clock; sensor : string }
