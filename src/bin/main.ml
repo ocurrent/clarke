@@ -98,7 +98,9 @@ module Specs = struct
         | [ "const"; f ] -> (
             try Ok (`Const (float_of_string f))
             with _ -> Error (`Msg "Float parsing failed"))
-        | [ "ipmi"; sensor ] -> Ok (`Ipmi sensor)
+        | [ "ipmi"; _ ] ->
+            let sensor = String.split_on_char ':' s |> List.tl |> List.hd in
+            Ok (`Ipmi sensor)
         | _ -> Error (`Msg ("Unknown " ^ v)))
 
   let pp_meter_spec ppf = function

@@ -78,6 +78,7 @@ module Ipmi = struct
       Eio_luv.Low_level.Process.
         [ to_parent_pipe ~fd:Luv.Process.stdout ~parent_pipe () ]
     in
+    Logs.debug (fun f -> f "command: %a" Fmt.(list string) args);
     let t = Process.spawn ~sw ~redirect cmd args in
     let _ = Process.await_exit t in
     let read = read_all parent_pipe buf in
