@@ -22,7 +22,7 @@
   cohttp-eio
   tls-eio
   lwt_eio
-  prometheus
+  (prometheus (>= 1.2))
   prometheus-app
   ISO3166
   carbon
