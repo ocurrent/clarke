@@ -1,4 +1,4 @@
-(lang dune 3.8)
+(lang dune 3.7)
 (name clarke)
 
 (generate_opam_files true)
