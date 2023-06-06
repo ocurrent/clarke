@@ -10,31 +10,37 @@ index 57a9d14..ac665ad 100644
   (libraries
    eio_luv
 diff --git a/src/bin/main.ml b/src/bin/main.ml
-index 45a7618..f8f2dc2 100644
+index 4150a11..be1f0dd 100644
 --- a/src/bin/main.ml
 +++ b/src/bin/main.ml
-@@ -87,11 +87,11 @@ module Specs = struct
-   let meter_of_meter_spec ~clock = function
+@@ -82,16 +82,16 @@ module Specs = struct
+ 
+   let output_spec = Cmdliner.Arg.conv (output_spec_of_string, pp_output_spec)
+ 
+-  type meter_spec = [ `Const of float | `Ipmi of string | `Variorum ]
++  type meter_spec = [ `Const of float | `Ipmi of string (* | `Variorum  *)]
+ 
+   let meter_of_meter_spec ~clock : meter_spec -> S.meter = function
      | `Const f -> Models.const ~clock f
      | `Ipmi sensor -> S.Meter ((module Clarke.Models.Ipmi), { clock; sensor })
 -    | `Variorum -> S.Meter ((module Clarke.Models.Variorum), { clock })
 +    (* | `Variorum -> S.Meter ((module Clarke.Models.Variorum), { clock }) *)
-
-   let meter_spec_of_string s =
+ 
+   let meter_spec_of_string s : (meter_spec, [ `Msg of string ]) result =
      match String.lowercase_ascii s with
 -    | "variorum" -> Ok `Variorum
 +    (* | "variorum" -> Ok `Variorum *)
      | "ipmi" -> Ok (`Ipmi "Pwr Consumption")
      | v -> (
          match String.split_on_char ':' v with
-@@ -103,7 +103,7 @@ module Specs = struct
-
-   let pp_meter_spec ppf = function
+@@ -105,7 +105,7 @@ module Specs = struct
+ 
+   let pp_meter_spec ppf : meter_spec -> unit = function
      | `Const f -> Format.fprintf ppf "const:%.2fW" f
 -    | `Variorum -> Format.pp_print_string ppf "variorum"
 +    (* | `Variorum -> Format.pp_print_string ppf "variorum" *)
      | `Ipmi s -> Format.fprintf ppf "ipmi:%s" s
-
+ 
    let meter_spec = Cmdliner.Arg.conv (meter_spec_of_string, pp_meter_spec)
 diff --git a/src/lib/dune b/src/lib/dune
 index 183050b..36e65ba 100644
@@ -50,42 +56,42 @@ index 183050b..36e65ba 100644
    prometheus
    carbon
 diff --git a/src/lib/models.ml b/src/lib/models.ml
-index 31d094a..f4bca64 100644
+index fefae90..2bba65b 100644
 --- a/src/lib/models.ml
 +++ b/src/lib/models.ml
 @@ -27,7 +27,7 @@ let time ~clock f =
    end in
    S.Meter ((module M : S.Meter with type t = M.t), M.{ clock })
-
+ 
 -module Variorum = struct
 +(* module Variorum = struct
    open Variorum
    open Eio
-
+ 
 @@ -42,7 +42,7 @@ module Variorum = struct
          Info.v
            (Option.get (Ptime.of_float_s @@ Time.now t.clock))
            (Node_power.power_node s)
 -end
 +end *)
-
+ 
  module Ipmi = struct
    open Eio_luv.Low_level
 diff --git a/src/lib/models.mli b/src/lib/models.mli
 index 7044503..11fe9fd 100644
 --- a/src/lib/models.mli
 +++ b/src/lib/models.mli
-@@ -16,11 +16,11 @@ val time : clock:Time.clock -> (Ptime.t -> float) -> S.meter
+@@ -16,10 +16,10 @@ val time : clock:Time.clock -> (Ptime.t -> float) -> S.meter
      [fn] is a function from the current time to the energy usage. *)
-
+ 
  (** Variorum-based metric collecting *)
 -module Variorum : sig
 +(* module Variorum : sig
    type t = { clock : Time.clock }
-
+ 
    include S.Meter with type t := t
 -end
 +end *)
-
+ 
  (** IPMI-based metric collecting *)
  module Ipmi : sig
