@@ -4,9 +4,9 @@
 (generate_opam_files true)
 (version 0.1.0)
 (source (github ocurrent/clarke))
-(authors "Patrick Ferris <patrick@sirreg.org>")
-(maintainers "Patrick Ferris <patrick@sirreg.org>")
-(documentation "https://ocaml.ci.dev/documentation")
+(authors "Patrick Ferris <patrick@sirreg.org>" "Ben Andrew <benmandrew@gmail.com>" "Tim McGilchrist <timmcgil@gmail.com>")
+(maintainers "Patrick Ferris <patrick@sirreg.org>" "Ben Andrew <benmandrew@gmail.com>" "Tim McGilchrist <timmcgil@gmail.com>")
+(documentation "https://github.com/ocurrent/clarke#readme")
 (license "MIT")
 
 (package
@@ -15,19 +15,19 @@
  (depends
   (ocaml (>= 5.0))
   (eio_luv (>= 0.7))
-  variorum
-  ptime
-  cmdliner
-  http
-  cohttp-eio
-  tls-eio
-  lwt_eio
+   variorum
+   ptime
+   cmdliner
+   http
+   cohttp-eio
+   tls-eio
+   lwt_eio
   (prometheus (>= 1.2))
-  prometheus-app
-  ISO3166
-  carbon
-  capnp-rpc-lwt
-  capnp-rpc-unix
+   prometheus-app
+   ISO3166
+   carbon
+   capnp-rpc-lwt
+   capnp-rpc-unix
   (capnp (>= 3.5.0))
   (eio (>= 0.9))
   (ezjsonm (>= 1.3.0))
