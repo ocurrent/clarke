@@ -2,11 +2,17 @@
 opam-version: "2.0"
 version: "0.1.0"
 synopsis: "A power monitoring tool"
-maintainer: ["Patrick Ferris <patrick@sirreg.org>"]
-authors: ["Patrick Ferris <patrick@sirreg.org>"]
+maintainer: [
+  "Ben Andrew <benmandrew@gmail.com>" "Tim McGilchrist <timmcgil@gmail.com>"
+]
+authors: [
+  "Patrick Ferris <patrick@sirreg.org>"
+  "Ben Andrew <benmandrew@gmail.com>"
+  "Tim McGilchrist <timmcgil@gmail.com>"
+]
 license: "MIT"
 homepage: "https://github.com/ocurrent/clarke"
-doc: "https://ocaml.ci.dev/documentation"
+doc: "https://github.com/ocurrent/clarke#readme"
 bug-reports: "https://github.com/ocurrent/clarke/issues"
 depends: [
   "dune" {>= "3.7"}
