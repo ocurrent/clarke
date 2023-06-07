@@ -84,12 +84,12 @@ module Specs = struct
 
   type meter_spec = [ `Const of float | `Ipmi of string | `Variorum ]
 
-  let meter_of_meter_spec ~clock = function
+  let meter_of_meter_spec ~clock : meter_spec -> S.meter = function
     | `Const f -> Models.const ~clock f
     | `Ipmi sensor -> S.Meter ((module Clarke.Models.Ipmi), { clock; sensor })
     | `Variorum -> S.Meter ((module Clarke.Models.Variorum), { clock })
 
-  let meter_spec_of_string s =
+  let meter_spec_of_string s : (meter_spec, [ `Msg of string ]) result =
     match String.lowercase_ascii s with
     | "variorum" -> Ok `Variorum
     | "ipmi" -> Ok (`Ipmi "Pwr Consumption")
@@ -103,7 +103,7 @@ module Specs = struct
             Ok (`Ipmi sensor)
         | _ -> Error (`Msg ("Unknown " ^ v)))
 
-  let pp_meter_spec ppf = function
+  let pp_meter_spec ppf : meter_spec -> unit = function
     | `Const f -> Format.fprintf ppf "const:%.2fW" f
     | `Variorum -> Format.pp_print_string ppf "variorum"
     | `Ipmi s -> Format.fprintf ppf "ipmi:%s" s
