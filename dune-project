@@ -17,8 +17,6 @@
    variorum
    ptime
    cmdliner
-   http
-   cohttp-eio
    tls-eio
    lwt_eio
   (prometheus (>= 1.2))
