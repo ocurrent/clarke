@@ -14,7 +14,6 @@
  (synopsis "A power monitoring tool")
  (depends
   (ocaml (>= 5.0))
-  (eio_luv (>= 0.7))
    variorum
    ptime
    cmdliner
@@ -29,7 +28,8 @@
    capnp-rpc-lwt
    capnp-rpc-unix
   (capnp (>= 3.5.0))
-  (eio (>= 0.9))
+  (eio (>= 0.10))
+  (eio_main (>= 0.10))
   (ezjsonm (>= 1.3.0))
   (fmt (>= 0.9.0))
   (logs (>= 0.7.0))))

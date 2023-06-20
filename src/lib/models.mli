@@ -24,7 +24,11 @@ end
 
 (** IPMI-based metric collecting *)
 module Ipmi : sig
-  type t = { clock : Time.clock; sensor : string }
+  type t = {
+    clock : Time.clock;
+    process_mgr : Eio_unix.Process.mgr;
+    sensor : string;
+  }
 
   include S.Meter with type t := t
 end

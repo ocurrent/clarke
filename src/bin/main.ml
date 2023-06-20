@@ -84,9 +84,10 @@ module Specs = struct
 
   type meter_spec = [ `Const of float | `Ipmi of string | `Variorum ]
 
-  let meter_of_meter_spec ~clock : meter_spec -> S.meter = function
+  let meter_of_meter_spec ~clock ~process_mgr : meter_spec -> S.meter = function
     | `Const f -> Models.const ~clock f
-    | `Ipmi sensor -> S.Meter ((module Clarke.Models.Ipmi), { clock; sensor })
+    | `Ipmi sensor ->
+        S.Meter ((module Clarke.Models.Ipmi), { clock; process_mgr; sensor })
     | `Variorum -> S.Meter ((module Clarke.Models.Variorum), { clock })
 
   let meter_spec_of_string s : (meter_spec, [ `Msg of string ]) result =
@@ -232,7 +233,9 @@ let report ~env ~machine spec file =
   match spec with
   | None -> ()
   | Some spec ->
-      let (Reporter ((module T), conf)) = Reporter.of_spec env spec in
+      let (Reporter ((module T), conf)) =
+        Reporter.of_spec ~fs:env#fs ~net:env#net ~stdout:env#stdout spec
+      in
       let s =
         Path.(with_open_in (env#fs / file)) @@ fun flow ->
         let reader = Buf_read.of_flow ~max_size:max_int flow in
@@ -241,7 +244,7 @@ let report ~env ~machine spec file =
       Path.(unlink (env#fs / file));
       T.report ~machine conf s |> log_err
 
-let monitor ~env ~stdout ~net ~clock =
+let monitor ~env ~stdout ~net ~clock ~process_mgr =
   let run () machine output_spec meter period prom country api_code
       reporter_spec reporter_period =
     let api_code =
@@ -262,7 +265,7 @@ let monitor ~env ~stdout ~net ~clock =
     Switch.run @@ fun sw ->
     let intensity = ref (get_intensity ()) in
     let (S.Meter ((module M), t) : S.meter) =
-      Specs.meter_of_meter_spec ~clock meter
+      Specs.meter_of_meter_spec ~clock ~process_mgr meter
     in
     if not M.supported then Error "Unsupported meter choice, consult the manual"
     else (
@@ -310,7 +313,8 @@ let monitor ~env ~stdout ~net ~clock =
 
 let cmds env =
   [
-    monitor ~env ~stdout:env#stdout ~net:env#net ~clock:env#clock;
+    monitor ~env ~stdout:env#stdout ~net:env#net ~clock:env#clock
+      ~process_mgr:env#process_mgr;
     Server.cmd setup_log ~net:env#net;
     Calc.cmd setup_log env#fs;
   ]
@@ -321,6 +325,4 @@ let main_cmd env =
   let default = Term.(ret @@ const (`Help (`Pager, None))) in
   Cmd.group info ~default (cmds env)
 
-let () =
-  Eio_luv.run @@ fun env ->
-  exit (Cmd.eval_result (main_cmd (env :> Eio.Stdenv.t)))
+let () = Eio_main.run @@ fun env -> exit (Cmd.eval_result (main_cmd env))

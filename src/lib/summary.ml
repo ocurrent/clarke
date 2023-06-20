@@ -217,7 +217,11 @@ module Reporter = struct
             let resp, _ =
               Client.post
                 ~headers:(headers (String.length s))
-                ~body:(Body.Fixed s) ~conn (hostname, None) t
+                ~body:(Body.Fixed s) ~conn
+                (object
+                   method net = net
+                end)
+                ~host:hostname t
             in
             (Http.Response.status resp :> status)
       in
@@ -231,7 +235,9 @@ module Reporter = struct
   end
 
   let make_file path = ((module File : S with type conf = File.conf), path)
-  let make_sink sink = ((module Stdout : S with type conf = Stdout.conf), sink)
+
+  let make_sink sink =
+    ((module Stdout : S with type conf = Stdout.conf), (sink :> Flow.sink))
 
   let make_slack net path =
     let endpoint = Path.load path |> String.trim in
@@ -239,10 +245,10 @@ module Reporter = struct
 
   type spec = [ `File of string | `Slack of string | `Stdout ]
 
-  let of_spec env : spec -> t = function
-    | `File p -> Reporter (make_file Path.(env#fs / p))
-    | `Slack e -> Reporter (make_slack env#net Path.(env#fs / e))
-    | `Stdout -> Reporter (make_sink env#stdout)
+  let of_spec ~fs ~net ~stdout : spec -> t = function
+    | `File p -> Reporter (make_file Path.(fs / p))
+    | `Slack e -> Reporter (make_slack net Path.(fs / e))
+    | `Stdout -> Reporter (make_sink stdout)
 
   let spec_of_string s =
     match Astring.String.cut s ~sep:":" with

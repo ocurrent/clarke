@@ -72,7 +72,7 @@ let run_server ~port env handler =
       Printf.fprintf stderr "Error handling connection: %s\n%!"
         (Printexc.to_string exn)
     in
-    let handler = Cohttp_eio.Server.connection_handler handler in
+    let handler = Cohttp_eio.Server.connection_handler handler env#clock in
     Eio.Switch.run (fun sw ->
         let rec loop () =
           Eio.Net.accept_fork ~sw ssock ~on_error handler;

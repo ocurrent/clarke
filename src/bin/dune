@@ -2,7 +2,7 @@
  (name main)
  (public_name clarke)
  (libraries
-  eio_luv
+  eio_main
   eio.unix
   capnp-rpc-unix
   clarke

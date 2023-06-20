@@ -44,7 +44,12 @@ module Reporter : sig
   type spec = [ `File of string | `Slack of string | `Stdout ]
   (** Useful for cmdliner *)
 
-  val of_spec : Eio.Stdenv.t -> spec -> t
+  val of_spec :
+    fs:Eio.Fs.dir Eio.Path.t ->
+    net:Eio.Net.t ->
+    stdout:Eio_unix.sink ->
+    spec ->
+    t
 
   val spec_of_string : string -> spec
   (** Default to [`Stdout]. *)

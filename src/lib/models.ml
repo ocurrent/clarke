@@ -45,8 +45,6 @@ module Variorum = struct
 end
 
 module Ipmi = struct
-  open Eio_luv.Low_level
-
   module Cmd = struct
     let ipmi args = ("sudo", "sudo" :: "ipmitool" :: args)
     let power_consumption sensor = ipmi [ "sensor"; "reading"; sensor; "-c" ]
@@ -57,36 +55,22 @@ module Ipmi = struct
       | _ -> failwith ("Couldn't parse the power consumption: " ^ s)
   end
 
-  type t = { clock : Eio.Time.clock; sensor : string }
+  type t = {
+    clock : Eio.Time.clock;
+    process_mgr : Eio_unix.Process.mgr;
+    sensor : string;
+  }
 
   let supported = true
 
-  let read_all handle buf =
-    let rec read acc =
-      match Eio_luv.Low_level.Stream.read_into handle buf with
-      | i -> read (acc + i)
-      | exception End_of_file -> acc
-    in
-    read 0
-
-  let get_power_consumption sensor =
+  let get_power_consumption ~process_mgr sensor =
     let cmd, args = Cmd.power_consumption sensor in
-    Switch.run @@ fun sw ->
-    let parent_pipe = Eio_luv.Low_level.Pipe.init ~sw () in
-    let buf = Luv.Buffer.create 64 in
-    let redirect =
-      Eio_luv.Low_level.Process.
-        [ to_parent_pipe ~fd:Luv.Process.stdout ~parent_pipe () ]
-    in
     Logs.debug (fun f -> f "command: %a" Fmt.(list string) args);
-    let t = Process.spawn ~sw ~redirect cmd args in
-    let _ = Process.await_exit t in
-    let read = read_all parent_pipe buf in
-    Luv.Buffer.to_string (Luv.Buffer.sub buf ~offset:0 ~length:read)
+    Eio.Process.parse_out process_mgr Buf_read.take_all (cmd :: args)
 
   let collect t =
     let pc =
-      get_power_consumption t.sensor
+      get_power_consumption ~process_mgr:t.process_mgr t.sensor
       |> Cmd.parse_power_consumption ~sensor:t.sensor
       |> float_of_int
     in

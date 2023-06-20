@@ -3,7 +3,9 @@ opam-version: "2.0"
 version: "0.1.0"
 synopsis: "A power monitoring tool"
 maintainer: [
-  "Ben Andrew <benmandrew@gmail.com>" "Tim McGilchrist <timmcgil@gmail.com>"
+  "Patrick Ferris <patrick@sirreg.org>"
+  "Ben Andrew <benmandrew@gmail.com>"
+  "Tim McGilchrist <timmcgil@gmail.com>"
 ]
 authors: [
   "Patrick Ferris <patrick@sirreg.org>"
@@ -17,7 +19,6 @@ bug-reports: "https://github.com/ocurrent/clarke/issues"
 depends: [
   "dune" {>= "3.7"}
   "ocaml" {>= "5.0"}
-  "eio_luv" {>= "0.7"}
   "variorum"
   "ptime"
   "cmdliner"
@@ -32,7 +33,8 @@ depends: [
   "capnp-rpc-lwt"
   "capnp-rpc-unix"
   "capnp" {>= "3.5.0"}
-  "eio" {>= "0.9"}
+  "eio" {>= "0.10"}
+  "eio_main" {>= "0.10"}
   "ezjsonm" {>= "1.3.0"}
   "fmt" {>= "0.9.0"}
   "logs" {>= "0.7.0"}
@@ -57,9 +59,7 @@ pin-depends: [
   [ "hwloc.dev" "git+https://github.com/patricoferris/ocaml-hwloc#3447dc5c40f0d868529aafcc84b5d2d971062b30" ]
   [ "jansson.dev" "git+https://github.com/patricoferris/ocaml-jansson#42cb429e722ec64807d75ae401758eb666c9d189" ]
   [ "variorum.dev" "git+https://github.com/patricoferris/ocaml-variorum#9128770e9df08ca7a90f317acc08b9cd49da6766" ]
-  [ "carbon.dev" "git+https://github.com/geocaml/carbon-intensity#872bc97cf1e98c55a6ea6f72f485bcaa605d19b1" ]
-  [ "http.dev" "git+https://github.com/mirage/ocaml-cohttp#df6e8fc58edac41b285c9b6d2bbc0b23533fa713"]
-  [ "cohttp-eio.dev" "git+https://github.com/mirage/ocaml-cohttp#df6e8fc58edac41b285c9b6d2bbc0b23533fa713"]
+  [ "carbon.dev" "git+https://github.com/geocaml/carbon-intensity#778fe7554b9df1dd282fe296aa534469568d15a1" ]
   [ "capnp-rpc.dev" "git+https://github.com/talex5/capnp-rpc#04e27dfe253850192c36ff2886e91ac50a9a1bf2" ]
   [ "capnp-rpc-net.dev" "git+https://github.com/talex5/capnp-rpc#04e27dfe253850192c36ff2886e91ac50a9a1bf2" ]
   [ "capnp-rpc-lwt.dev" "git+https://github.com/talex5/capnp-rpc#04e27dfe253850192c36ff2886e91ac50a9a1bf2" ]
