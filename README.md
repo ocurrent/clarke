@@ -26,13 +26,13 @@ The tool is also primarily focused on calculating emissions. It integrates the [
 The two main parts of `clarke` you can change are, the "meter" (the source of wattage information) and the output (where the serialised JSON is sent). The simplest example is:
 
 ```sh
-clarke monitor --meter=const:100
+clarke monitor --machine=my-machine --meter=const:100
 ```
 
 This will send data to `stdout` with a constant wattage of `100`. You could equally send it over a TCP connection with:
 
 ```sh
-clarke monitor --meter=const:100 --output=tcp:loopback:8080 &
+clarke monitor --machine=my-machine --meter=const:100 --output=tcp:loopback:8080 &
 nc 127.0.0.1 8080
 ```
 
