@@ -3,7 +3,9 @@ opam-version: "2.0"
 version: "0.1.0"
 synopsis: "A power monitoring tool"
 maintainer: [
-  "Ben Andrew <benmandrew@gmail.com>" "Tim McGilchrist <timmcgil@gmail.com>"
+  "Patrick Ferris <patrick@sirreg.org>"
+  "Ben Andrew <benmandrew@gmail.com>"
+  "Tim McGilchrist <timmcgil@gmail.com>"
 ]
 authors: [
   "Patrick Ferris <patrick@sirreg.org>"
