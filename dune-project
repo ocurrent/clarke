@@ -26,6 +26,7 @@
    capnp-rpc-lwt
    capnp-rpc-unix
   (capnp (>= 3.5.0))
+  (cohttp-eio (>= 6.0.0~alpha1))
   (eio (>= 0.10))
   (eio_main (>= 0.10))
   (ezjsonm (>= 1.3.0))
