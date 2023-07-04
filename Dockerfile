@@ -1,6 +1,7 @@
 FROM ocaml/opam:alpine-3.16-ocaml-5.0 AS build
 RUN sudo apk add --update libev-dev linux-headers capnproto-dev m4 pkgconf gmp-dev libtool autoconf automake cmake
-RUN cd ~/opam-repository && git fetch -q origin master && git reset --hard c35e6e94f13811794e7c47893077eb155e8f07f1 && opam update
+RUN sudo ln -f /usr/bin/opam-2.1 /usr/bin/opam
+RUN cd ~/opam-repository && git fetch -q origin master && git reset --hard a078652a295abca9601c6240d6d191fb0abc2b9c && opam update
 COPY --chown=opam clarke.opam /src/
 WORKDIR /src
 RUN opam pin -yn . && opam install -y --deps-only .
