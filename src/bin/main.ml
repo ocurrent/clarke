@@ -208,7 +208,10 @@ let get_intensity ?country ?api_code net =
           f "Calculating carbon intensity for %s"
             (ISO3166.alpha2_to_string country_code));
       let v = Carbon.Co2_signal.v ~api_key:api net in
-      let i = Co2_signal.get_intensity v ~country_code in
+      let zone =
+        Co2_signal.Zone.of_string @@ ISO3166.alpha2_to_string country_code
+      in
+      let i = Co2_signal.get_intensity v ~zone in
       Co2_signal.Intensity.intensity i |> float_of_int |> Option.some
   | _ -> None
 

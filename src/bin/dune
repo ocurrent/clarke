@@ -8,5 +8,6 @@
   clarke
   cmdliner
   clarke.prometheus-eio
+  ISO3166
   logs.cli
   fmt.cli))
