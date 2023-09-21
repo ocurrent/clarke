@@ -25,6 +25,7 @@
    carbon
    capnp-rpc-lwt
    capnp-rpc-unix
+  (extunix (>= 0.4.1))
   (capnp (>= 3.5.0))
   (cohttp-eio (>= 6.0.0~alpha1))
   (eio (>= 0.10))
