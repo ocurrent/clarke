@@ -327,4 +327,7 @@ let main_cmd env =
   let default = Term.(ret @@ const (`Help (`Pager, None))) in
   Cmd.group info ~default (cmds env)
 
-let () = Eio_main.run @@ fun env -> exit (Cmd.eval_result (main_cmd env))
+let () =
+  Eio_posix.run @@ fun env ->
+  Mirage_crypto_rng_eio.run (module Mirage_crypto_rng.Fortuna) env @@ fun _ ->
+  exit (Cmd.eval_result (main_cmd env))

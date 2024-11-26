@@ -4,8 +4,9 @@
   (:standard -cclib -static))
  (public_name clarke)
  (libraries
-  eio_main
+  eio_posix
   eio.unix
+  mirage-crypto-rng-eio
   capnp-rpc-unix
   clarke
   cmdliner

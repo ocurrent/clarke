@@ -18,6 +18,7 @@
    ptime
    cmdliner
    tls-eio
+   mirage-crypto-rng-eio
    lwt_eio
   (prometheus (>= 1.2))
    prometheus-app
