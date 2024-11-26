@@ -1,5 +1,7 @@
 (executable
  (name main)
+ (flags
+  (:standard -cclib -static))
  (public_name clarke)
  (libraries
   eio_main

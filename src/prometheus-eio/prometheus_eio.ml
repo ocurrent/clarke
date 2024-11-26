@@ -44,7 +44,7 @@ type config = int option
 module Server = struct
   module Server = Cohttp_eio.Server
 
-  let callback (req, _, _) =
+  let callback _conn req _body =
     let open Http in
     let uri = Request.resource req in
     match (Request.meth req, uri) with
@@ -54,7 +54,7 @@ module Server = struct
           @@ Prometheus.CollectorRegistry.(collect default)
         in
         let body =
-          Cohttp_eio.Body.Fixed
+          Cohttp_eio.Body.of_string
             (Fmt.to_to_string Prometheus_app.TextFormat_0_0_4.output data)
         in
         let headers =
@@ -62,40 +62,24 @@ module Server = struct
         in
         (Http.Response.make ~status:`OK ~headers (), body)
     | _ ->
-        ( Http.Response.make ~status:`Bad_request (),
-          Cohttp_eio.Body.Fixed "Bad request" )
+        (Http.Response.make ~status:`Not_found (), Cohttp_eio.Body.of_string "")
 end
 
-let run_server ~port env handler =
-  let run_domain ssock handler =
-    let on_error exn =
-      Printf.fprintf stderr "Error handling connection: %s\n%!"
-        (Printexc.to_string exn)
-    in
-    let handler = Cohttp_eio.Server.connection_handler handler env#clock in
-    Eio.Switch.run (fun sw ->
-        let rec loop () =
-          Eio.Net.accept_fork ~sw ssock ~on_error handler;
-          loop ()
-        in
-        loop ())
+let run_server ~port net handler =
+  let handler = Cohttp_eio.Server.make ~callback:handler () in
+  Eio.Switch.run @@ fun sw ->
+  let socket =
+    Eio.Net.listen ~backlog:5 ~sw net (`Tcp (Eio.Net.Ipaddr.V4.any, port))
   in
-  let run ~port env handler =
-    Eio.Switch.run @@ fun sw ->
-    let ssock =
-      Eio.Net.listen (Eio.Stdenv.net env) ~sw ~reuse_addr:true ~reuse_port:true
-        ~backlog:128
-        (`Tcp (Eio.Net.Ipaddr.V4.any, port))
-    in
-    run_domain ssock handler
-  in
-  run ~port env handler
+  Cohttp_eio.Server.run ~max_connections:128
+    ~on_error:(Eio.traceln "Error: %a" Fmt.exn)
+    socket handler
 
-let serve env = function
+let serve net = function
   | None -> fun () -> ()
   | Some port ->
       let callback = Server.callback in
-      fun () -> run_server ~port env callback
+      fun () -> run_server ~port net callback
 
 let listen_prometheus =
   let open! Cmdliner in

@@ -12,6 +12,7 @@ module Metrics = struct
 end
 
 type output = O : (module S.Output with type t = 'a) * 'a -> output
+type sink = Flow.sink_ty Flow.sink
 
 let with_socket ~sw net v fn =
   let listener = Net.listen ~sw ~backlog:5 net v in
@@ -20,9 +21,7 @@ let with_socket ~sw net v fn =
         traceln "Err: %s" (Printexc.to_string e))
     @@ fun socket _addr ->
     fn
-      (O
-         ( (module Outputs.Flow : S.Output with type t = Flow.sink),
-           (socket :> Flow.sink) ))
+      (O ((module Outputs.Flow : S.Output with type t = sink), (socket :> sink)))
   done
 
 module Specs = struct
@@ -35,22 +34,22 @@ module Specs = struct
     | Flow `Stdout ->
         fn
           (O
-             ( (module Outputs.Flow : S.Output with type t = Flow.sink),
-               (stdout :> Flow.sink) ))
+             ( (module Outputs.Flow : S.Output with type t = sink),
+               (stdout :> sink) ))
     | Flow (`File f) ->
         Path.with_open_out ~append:true ~create:(`If_missing 0o644)
           Path.(fs / f)
         @@ fun flow ->
         fn
           (O
-             ( (module Outputs.Flow : S.Output with type t = Flow.sink),
-               (flow :> Flow.sink) ))
+             ( (module Outputs.Flow : S.Output with type t = sink),
+               (flow :> sink) ))
     | Flow (#Net.Sockaddr.stream as v) -> with_socket ~sw net v fn
     | Capnp f ->
         let uri = Path.(load (fs / f)) |> String.trim |> Uri.of_string in
         let client_vat = Capnp_rpc_unix.client_only_vat ~sw net in
         let sr = Capnp_rpc_unix.Vat.import_exn client_vat uri in
-        Capnp_rpc_lwt.Sturdy_ref.with_cap_exn sr @@ fun client ->
+        Capnp_rpc.Sturdy_ref.with_cap_exn sr @@ fun client ->
         fn
           (O
              ( (module Outputs.Capnp : S.Output with type t = Capnp_client.t),
@@ -82,17 +81,17 @@ module Specs = struct
 
   let output_spec = Cmdliner.Arg.conv (output_spec_of_string, pp_output_spec)
 
-  type meter_spec = [ `Const of float | `Ipmi of string | `Variorum ]
+  type meter_spec = [ `Const of float | `Ipmi of string (* | `Variorum *) ]
 
   let meter_of_meter_spec ~clock ~process_mgr : meter_spec -> S.meter = function
     | `Const f -> Models.const ~clock f
     | `Ipmi sensor ->
         S.Meter ((module Clarke.Models.Ipmi), { clock; process_mgr; sensor })
-    | `Variorum -> S.Meter ((module Clarke.Models.Variorum), { clock })
+  (* | `Variorum -> S.Meter ((module Clarke.Models.Variorum), { clock }) *)
 
   let meter_spec_of_string s : (meter_spec, [ `Msg of string ]) result =
     match String.lowercase_ascii s with
-    | "variorum" -> Ok `Variorum
+    (* | "variorum" -> Ok `Variorum *)
     | "ipmi" -> Ok (`Ipmi "Pwr Consumption")
     | v -> (
         match String.split_on_char ':' v with
@@ -106,7 +105,7 @@ module Specs = struct
 
   let pp_meter_spec ppf : meter_spec -> unit = function
     | `Const f -> Format.fprintf ppf "const:%.2fW" f
-    | `Variorum -> Format.pp_print_string ppf "variorum"
+    (* | `Variorum -> Format.pp_print_string ppf "variorum" *)
     | `Ipmi s -> Format.fprintf ppf "ipmi:%s" s
 
   let meter_spec = Cmdliner.Arg.conv (meter_spec_of_string, pp_meter_spec)
@@ -274,7 +273,7 @@ let monitor ~env ~stdout ~net ~clock ~process_mgr =
     else (
       Fiber.all
         [
-          Prometheus_eio.serve env prom;
+          Prometheus_eio.serve env#net prom;
           (fun () ->
             while true do
               Eio_unix.sleep (30. *. 60.);
@@ -314,7 +313,7 @@ let monitor ~env ~stdout ~net ~clock ~process_mgr =
       $ period_term $ Prometheus_eio.opts $ country_code_term $ api_term
       $ reporter_term $ report_period_term)
 
-let cmds env =
+let cmds (env : Eio_unix.Stdenv.base) =
   [
     monitor ~env ~stdout:env#stdout ~net:env#net ~clock:env#clock
       ~process_mgr:env#process_mgr;
