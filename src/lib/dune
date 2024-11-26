@@ -12,9 +12,9 @@
  (libraries
   eio.unix
   ptime
-  variorum
+  ; variorum
   ezjsonm
   prometheus
   carbon
   capnp
-  capnp-rpc-lwt))
+  capnp-rpc))

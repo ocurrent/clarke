@@ -113,14 +113,14 @@ module Reporter = struct
   type t = Reporter : ((module S with type conf = 'a) * 'a) -> t
 
   module Stdout = struct
-    type conf = Eio.Flow.sink
+    type conf = Eio.Flow.sink_ty Eio.Flow.sink
 
     let report ~machine flow s =
       Ok (Flow.copy_string (Fmt.str "machine:%s\n%a\n" machine pp s) flow)
   end
 
   module File = struct
-    type conf = Fs.dir Path.t
+    type conf = Fs.dir_ty Path.t
 
     let report ~machine path s =
       Path.with_open_out ~append:true ~create:(`If_missing 0o644) path
@@ -130,7 +130,7 @@ module Reporter = struct
   module Slack = struct
     open Cohttp_eio
 
-    type conf = Net.t * string (* The slack endpoint *)
+    type conf = [ `Generic ] Net.ty Net.t * string (* The slack endpoint *)
 
     type status =
       [ `Getaddr_info_empty of string | `Connection_failure | Http.Status.t ]
@@ -141,41 +141,7 @@ module Reporter = struct
           Fmt.pf ppf "Getaddr info returned no IP addresses: %s" s
       | #Http.Status.t as v -> Http.Status.pp ppf v
 
-    let null_auth ?ip:_ ~host:_ _ = Ok None
-
-    let with_tls_conn ~net hostname fn =
-      let addrs =
-        try Net.getaddrinfo_stream ~service:"https" net hostname with _ -> []
-      in
-      match addrs with
-      | [] -> `Getaddr_info_empty hostname
-      | addr :: _ -> (
-          Switch.run @@ fun sw ->
-          let authenticator = null_auth in
-          let socket =
-            try `Socket (Eio.Net.connect ~sw net addr)
-            with Io (Net.E (Net.Connection_failure _exn), _ctx) ->
-              Logs.info (fun f -> f "Connection failur");
-              `Connection_failure
-          in
-          match socket with
-          | `Connection_failure -> fn `Connection_failure
-          | `Socket socket ->
-              let conn =
-                let host =
-                  Result.to_option
-                    (Result.bind
-                       (Domain_name.of_string hostname)
-                       Domain_name.host)
-                in
-                Tls_eio.client_of_flow
-                  Tls.Config.(
-                    client ~version:(`TLS_1_1, `TLS_1_3) ~authenticator ())
-                  ?host socket
-              in
-              fn (`Ok conn))
-
-    let hostname = "hooks.slack.com"
+    let slack_hook = Uri.of_string "https://hooks.slack.com"
 
     let format machine t =
       `O
@@ -202,28 +168,23 @@ module Reporter = struct
     let headers s =
       Http.Header.of_list
         [
-          ("host", hostname);
-          (* ("Content-Type", "application/json"); *)
+          ("host", Uri.host_with_default slack_hook);
           ("Content-Length", string_of_int s);
         ]
 
     let body ~machine msgs = format_msgs machine msgs |> Ezjsonm.value_to_string
 
     let report ~machine (net, t) s =
+      let uri = Uri.with_path slack_hook t in
       let run s =
-        with_tls_conn ~net hostname @@ function
-        | `Connection_failure -> `OK
-        | `Ok conn ->
-            let resp, _ =
-              Client.post
-                ~headers:(headers (String.length s))
-                ~body:(Body.Fixed s) ~conn
-                (object
-                   method net = net
-                end)
-                ~host:hostname t
-            in
-            (Http.Response.status resp :> status)
+        Eio.Switch.run @@ fun sw ->
+        let resp, _ =
+          let client = Client.make ~https:None net in
+          Client.post ~sw
+            ~headers:(headers (String.length s))
+            ~body:(Body.of_string s) client uri
+        in
+        (Http.Response.status resp :> status)
       in
       let status =
         let s = body ~machine s in
@@ -237,7 +198,7 @@ module Reporter = struct
   let make_file path = ((module File : S with type conf = File.conf), path)
 
   let make_sink sink =
-    ((module Stdout : S with type conf = Stdout.conf), (sink :> Flow.sink))
+    ((module Stdout : S with type conf = Stdout.conf), (sink :> _ Flow.sink))
 
   let make_slack net path =
     let endpoint = Path.load path |> String.trim in
@@ -247,8 +208,10 @@ module Reporter = struct
 
   let of_spec ~fs ~net ~stdout : spec -> t = function
     | `File p -> Reporter (make_file Path.(fs / p))
-    | `Slack e -> Reporter (make_slack net Path.(fs / e))
-    | `Stdout -> Reporter (make_sink stdout)
+    | `Slack e ->
+        Reporter
+          (make_slack (net :> [ `Generic ] Eio.Net.ty Eio.Net.t) Path.(fs / e))
+    | `Stdout -> Reporter (make_sink (stdout :> Eio.Flow.sink_ty Eio.Flow.sink))
 
   let spec_of_string s =
     match Astring.String.cut s ~sep:":" with

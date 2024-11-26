@@ -14,22 +14,20 @@
  (synopsis "A power monitoring tool")
  (depends
   (ocaml (>= 5.0))
-   variorum
+   ;variorum
    ptime
    cmdliner
    tls-eio
+   mirage-crypto-rng-eio
    lwt_eio
   (prometheus (>= 1.2))
    prometheus-app
    ISO3166
    carbon
-   capnp-rpc-lwt
+   capnp-rpc
    capnp-rpc-unix
-  (extunix (>= 0.4.1))
-  (capnp (>= 3.5.0))
-  (cohttp-eio (>= 6.0.0~alpha1))
-  (eio (>= 0.10))
-  (eio_main (>= 0.10))
+  (cohttp-eio (>= 6.0.0~beta2))
+  (eio_main (>= 0.12))
   (ezjsonm (>= 1.3.0))
   (fmt (>= 0.9.0))
   (logs (>= 0.7.0))))

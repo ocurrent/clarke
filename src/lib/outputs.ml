@@ -1,5 +1,5 @@
 module Flow = struct
-  type t = Eio.Flow.sink
+  type t = Eio.Flow.sink_ty Eio.Flow.sink
 
   let send ~machine:_ sink info =
     Eio.Flow.copy_string (Info.to_json info) sink;

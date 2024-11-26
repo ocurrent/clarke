@@ -32,22 +32,22 @@ module Reporter : sig
     | Reporter : ((module S with type conf = 'a) * 'a) -> t
         (** Generic reporters *)
 
-  module File : S with type conf = Eio.Fs.dir Eio.Path.t
+  module File : S with type conf = Eio.Fs.dir_ty Eio.Path.t
   (** A filesystem reporter that writes the summaries into a file. *)
 
-  module Stdout : S with type conf = Eio.Flow.sink
+  module Stdout : S with type conf = Eio.Flow.sink_ty Eio.Flow.sink
   (** A generic stdout reporter *)
 
-  module Slack : S with type conf = Eio.Net.t * string
+  module Slack : S with type conf = [ `Generic ] Eio.Net.ty Eio.Net.t * string
   (** A slack reporter that seconds summaries to slack *)
 
   type spec = [ `File of string | `Slack of string | `Stdout ]
   (** Useful for cmdliner *)
 
   val of_spec :
-    fs:Eio.Fs.dir Eio.Path.t ->
-    net:Eio.Net.t ->
-    stdout:Eio_unix.sink ->
+    fs:Eio.Fs.dir_ty Eio.Path.t ->
+    net:_ Eio.Net.t ->
+    stdout:_ Eio_unix.sink ->
     spec ->
     t
 

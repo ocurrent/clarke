@@ -2,7 +2,7 @@ open Eio
 
 let const ~clock f =
   let module M = struct
-    type t = { clock : Time.clock }
+    type t = { clock : float Time.clock_ty Time.clock }
 
     let supported = true
 
@@ -11,11 +11,13 @@ let const ~clock f =
     let collect { clock } =
       Info.v (Option.get @@ Ptime.of_float_s (Time.now clock)) f
   end in
-  S.Meter ((module M : S.Meter with type t = M.t), M.{ clock })
+  S.Meter
+    ( (module M : S.Meter with type t = M.t),
+      M.{ clock :> float Time.clock_ty Time.clock } )
 
 let time ~clock f =
   let module M = struct
-    type t = { clock : Time.clock }
+    type t = { clock : float Time.clock_ty Time.clock }
 
     let supported = true
 
@@ -25,24 +27,26 @@ let time ~clock f =
       let now = Option.get @@ Ptime.of_float_s (Time.now clock) in
       Info.v now (f now)
   end in
-  S.Meter ((module M : S.Meter with type t = M.t), M.{ clock })
+  S.Meter
+    ( (module M : S.Meter with type t = M.t),
+      M.{ clock :> float Time.clock_ty Time.clock } )
 
-module Variorum = struct
-  open Variorum
-  open Eio
+(* module Variorum = struct
+     open Variorum
+     open Eio
 
-  type t = { clock : Time.clock }
+     type t = { clock : Time.clock }
 
-  let supported = Variorum.supported
+     let supported = Variorum.supported
 
-  let collect t =
-    match Node_power.get () with
-    | Error (`Msg m) -> failwith m
-    | Ok s ->
-        Info.v
-          (Option.get (Ptime.of_float_s @@ Time.now t.clock))
-          (Node_power.power_node s)
-end
+     let collect t =
+       match Node_power.get () with
+       | Error (`Msg m) -> failwith m
+       | Ok s ->
+           Info.v
+             (Option.get (Ptime.of_float_s @@ Time.now t.clock))
+             (Node_power.power_node s)
+   end *)
 
 module Ipmi = struct
   module Cmd = struct
@@ -56,8 +60,8 @@ module Ipmi = struct
   end
 
   type t = {
-    clock : Eio.Time.clock;
-    process_mgr : Eio_unix.Process.mgr;
+    clock : float Eio.Time.clock_ty Eio.Time.clock;
+    process_mgr : Eio_unix.Process.mgr_ty Eio_unix.Process.mgr;
     sensor : string;
   }
 

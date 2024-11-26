@@ -1,5 +1,5 @@
-module Api = Carbon_api.MakeRPC (Capnp_rpc_lwt)
-open Capnp_rpc_lwt
+module Api = Carbon_api.MakeRPC (Capnp_rpc)
+open Capnp_rpc
 
 type t = Api.Client.Reporter.t Capability.t
 
