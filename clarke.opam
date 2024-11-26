@@ -19,7 +19,6 @@ bug-reports: "https://github.com/ocurrent/clarke/issues"
 depends: [
   "dune" {>= "3.7"}
   "ocaml" {>= "5.0"}
-  "variorum"
   "ptime"
   "cmdliner"
   "tls-eio"
@@ -53,9 +52,9 @@ build: [
 ]
 dev-repo: "git+https://github.com/ocurrent/clarke.git"
 pin-depends: [
-  [ "hwloc.dev" "git+https://github.com/patricoferris/ocaml-hwloc#3447dc5c40f0d868529aafcc84b5d2d971062b30" ]
-  [ "jansson.dev" "git+https://github.com/patricoferris/ocaml-jansson#42cb429e722ec64807d75ae401758eb666c9d189" ]
-  [ "variorum.dev" "git+https://github.com/patricoferris/ocaml-variorum#9128770e9df08ca7a90f317acc08b9cd49da6766" ]
+#  [ "hwloc.dev" "git+https://github.com/patricoferris/ocaml-hwloc#3447dc5c40f0d868529aafcc84b5d2d971062b30" ]
+#  [ "jansson.dev" "git+https://github.com/patricoferris/ocaml-jansson#42cb429e722ec64807d75ae401758eb666c9d189" ]
+#  [ "variorum.dev" "git+https://github.com/patricoferris/ocaml-variorum#9128770e9df08ca7a90f317acc08b9cd49da6766" ]
   [ "capnp-rpc.dev" "git+https://github.com/mirage/capnp-rpc#ae9c3e44a4400d7c153a9ffaabead638936bf63a" ]
   [ "capnp-rpc-net.dev" "git+https://github.com/mirage/capnp-rpc#ae9c3e44a4400d7c153a9ffaabead638936bf63a" ]
   [ "capnp-rpc-unix.dev" "git+https://github.com/mirage/capnp-rpc#ae9c3e44a4400d7c153a9ffaabead638936bf63a" ]

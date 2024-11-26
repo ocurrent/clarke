@@ -14,7 +14,7 @@
  (synopsis "A power monitoring tool")
  (depends
   (ocaml (>= 5.0))
-   variorum
+   ;variorum
    ptime
    cmdliner
    tls-eio
